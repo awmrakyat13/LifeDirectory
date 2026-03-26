@@ -23,6 +23,7 @@ export function SettingsPage() {
   const nudgeDays = settings?.nudgeDays ?? 30;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showImportConfirm, setShowImportConfirm] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importPreview, setImportPreview] = useState<{ people: number; categories: number; interactions: number } | null>(null);
 
@@ -66,6 +67,21 @@ export function SettingsPage() {
   async function handleExportCategory(categoryId: string, categoryName: string) {
     await exportCategory(categoryId);
     toast(`Exported "${categoryName}" people`, 'success');
+  }
+
+  async function handleClearAll() {
+    await db.transaction('rw', [db.people, db.categories, db.personCategories, db.interactions, db.settings], async () => {
+      await db.people.clear();
+      await db.categories.clear();
+      await db.personCategories.clear();
+      await db.interactions.clear();
+      await db.settings.clear();
+    });
+    // Re-seed defaults
+    const { seedDatabase } = await import('../db/seed');
+    await seedDatabase();
+    toast('All data cleared', 'info');
+    setShowClearConfirm(false);
   }
 
   return (
@@ -212,6 +228,16 @@ export function SettingsPage() {
         )}
       </section>
 
+      <section className={`${styles.section} ${styles.dangerSection}`}>
+        <h2 className={styles.sectionTitle}>Danger Zone</h2>
+        <p className={styles.about} style={{ marginBottom: 'var(--space-md)' }}>
+          This will permanently delete all people, categories, interactions, and your profile. Default categories will be re-created.
+        </p>
+        <button className={styles.clearBtn} onClick={() => setShowClearConfirm(true)}>
+          Clear All Data
+        </button>
+      </section>
+
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>About</h2>
         <p className={styles.about}>
@@ -220,6 +246,17 @@ export function SettingsPage() {
           All data is stored locally on your device.
         </p>
       </section>
+
+      {showClearConfirm && (
+        <ConfirmDialog
+          title="Clear All Data"
+          message="This will permanently delete ALL people, categories, interactions, and your profile. This cannot be undone. Are you sure?"
+          confirmLabel="Clear Everything"
+          danger
+          onConfirm={handleClearAll}
+          onCancel={() => setShowClearConfirm(false)}
+        />
+      )}
 
       {showImportConfirm && (
         <ConfirmDialog
