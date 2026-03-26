@@ -15,24 +15,22 @@ interface Galaxy3DProps {
   onClick: (id: string) => void;
 }
 
-// Slow ambient dust particles
 function DustField() {
   const ref = useRef<THREE.Points>(null);
-  const count = 600;
+  const count = 200;
 
   const positions = new Float32Array(count * 3);
   const sizes = new Float32Array(count);
   for (let i = 0; i < count; i++) {
-    positions[i * 3] = (Math.random() - 0.5) * 200;
-    positions[i * 3 + 1] = (Math.random() - 0.5) * 200;
-    positions[i * 3 + 2] = (Math.random() - 0.5) * 40;
-    sizes[i] = Math.random() * 0.3 + 0.1;
+    positions[i * 3] = (Math.random() - 0.5) * 250;
+    positions[i * 3 + 1] = (Math.random() - 0.5) * 250;
+    positions[i * 3 + 2] = (Math.random() - 0.5) * 30;
+    sizes[i] = Math.random() * 0.2 + 0.05;
   }
 
   useFrame((state) => {
     if (ref.current) {
-      ref.current.rotation.z = state.clock.elapsedTime * 0.005;
-      ref.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.01) * 0.02;
+      ref.current.rotation.z = state.clock.elapsedTime * 0.003;
     }
   });
 
@@ -44,9 +42,9 @@ function DustField() {
       </bufferGeometry>
       <pointsMaterial
         color="#5DADE2"
-        size={0.15}
+        size={0.1}
         transparent
-        opacity={0.3}
+        opacity={0.15}
         sizeAttenuation
         depthWrite={false}
         blending={THREE.AdditiveBlending}
@@ -64,27 +62,21 @@ function Scene({ layout, hoveredNodeId, onHover, onClick }: Galaxy3DProps) {
 
   return (
     <>
-      {/* Lighting */}
-      <ambientLight intensity={0.15} color="#8899bb" />
-      <pointLight position={[0, 0, 25]} intensity={2} color="#F39C12" distance={80} decay={2} />
-      <pointLight position={[30, -20, 15]} intensity={0.5} color="#5DADE2" distance={60} decay={2} />
-      <pointLight position={[-25, 15, 10]} intensity={0.3} color="#9B59B6" distance={50} decay={2} />
+      {/* Lighting — single warm center + dim ambient */}
+      <ambientLight intensity={0.2} color="#8899bb" />
+      <pointLight position={[0, 0, 20]} intensity={0.8} color="#F39C12" distance={70} decay={2} />
 
-      {/* Deep star field */}
-      <Stars radius={300} depth={100} count={5000} factor={5} saturation={0.3} fade speed={0.3} />
+      {/* Stars — backdrop, not distraction */}
+      <Stars radius={300} depth={100} count={3000} factor={3} saturation={0.2} fade speed={0.2} />
 
-      {/* Dust particles */}
       <DustField />
 
-      {/* Fog */}
-      <fog attach="fog" args={['#060612', 60, 200]} />
+      <fog attach="fog" args={['#060612', 80, 220]} />
 
-      {/* Orbit rings */}
       {layout.rings.map((ring) => (
         <OrbitRing3D key={ring.ring} ring={ring} />
       ))}
 
-      {/* Connection lines */}
       {layout.connections.map((conn) => {
         const from = nodePositions.get(conn.fromId);
         const to = nodePositions.get(conn.toId);
@@ -100,7 +92,6 @@ function Scene({ layout, hoveredNodeId, onHover, onClick }: Galaxy3DProps) {
         );
       })}
 
-      {/* Orbit nodes */}
       {layout.nodes.map((node) => (
         <OrbitNode3D
           key={node.id}
@@ -112,7 +103,6 @@ function Scene({ layout, hoveredNodeId, onHover, onClick }: Galaxy3DProps) {
         />
       ))}
 
-      {/* Center node */}
       <OrbitNode3D
         node={layout.center}
         isCenter
@@ -121,21 +111,17 @@ function Scene({ layout, hoveredNodeId, onHover, onClick }: Galaxy3DProps) {
         onClick={onClick}
       />
 
-      {/* Post-processing */}
+      {/* Subtle post-processing */}
       <EffectComposer>
         <Bloom
-          luminanceThreshold={0.2}
+          luminanceThreshold={0.6}
           luminanceSmoothing={0.9}
-          intensity={0.8}
+          intensity={0.3}
           mipmapBlur
         />
-        <Vignette
-          offset={0.3}
-          darkness={0.7}
-        />
+        <Vignette offset={0.3} darkness={0.4} />
       </EffectComposer>
 
-      {/* Camera controls */}
       <OrbitControls
         enablePan
         enableZoom
@@ -164,7 +150,7 @@ export function Galaxy3D(props: Galaxy3DProps) {
         antialias: true,
         alpha: false,
         toneMapping: THREE.ACESFilmicToneMapping,
-        toneMappingExposure: 1.2,
+        toneMappingExposure: 1.0,
         outputColorSpace: THREE.SRGBColorSpace,
       }}
     >
