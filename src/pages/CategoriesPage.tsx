@@ -1,8 +1,5 @@
+import { CategoryManager } from '../components/categories/CategoryManager';
+
 export function CategoriesPage() {
-  return (
-    <div>
-      <h1>Categories</h1>
-      <p>Manage your categories here.</p>
-    </div>
-  );
+  return <CategoryManager />;
 }

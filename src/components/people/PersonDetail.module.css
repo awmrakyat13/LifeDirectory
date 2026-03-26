@@ -1,0 +1,142 @@
+.container {
+  max-width: 700px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-xl);
+}
+
+.headerInfo {
+  flex: 1;
+}
+
+.name {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+}
+
+.nickname {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-lg);
+}
+
+.relationship {
+  color: var(--color-text-secondary);
+  margin-top: var(--space-xs);
+}
+
+.headerActions {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.editBtn,
+.deleteBtn,
+.backBtn {
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  text-decoration: none;
+}
+
+.editBtn:hover,
+.backBtn:hover {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+}
+
+.deleteBtn:hover {
+  background: var(--color-danger);
+  color: white;
+  border-color: var(--color-danger);
+}
+
+.categories {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  margin-top: var(--space-sm);
+}
+
+.section {
+  margin-bottom: var(--space-lg);
+  padding: var(--space-lg);
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.sectionTitle {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--color-accent);
+  margin-bottom: var(--space-md);
+}
+
+.field {
+  margin-bottom: var(--space-md);
+}
+
+.field:last-child {
+  margin-bottom: 0;
+}
+
+.fieldLabel {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+  margin-bottom: 2px;
+}
+
+.fieldValue {
+  color: var(--color-text-primary);
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.tag {
+  padding: 2px var(--space-sm);
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+}
+
+.sensitiveTag {
+  background: #E74C3C20;
+  color: var(--color-danger);
+}
+
+.childItem,
+.petItem,
+.contactItem {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+  padding: var(--space-xs) 0;
+}
+
+.howWeMet {
+  font-style: italic;
+  color: var(--color-text-secondary);
+}
+
+.favBtn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--color-text-tertiary);
+}
+
+.favActive {
+  color: var(--color-warning);
+}

@@ -1,0 +1,66 @@
+.card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: box-shadow 0.15s, border-color 0.15s;
+  text-decoration: none;
+  color: inherit;
+}
+
+.card:hover {
+  border-color: var(--color-accent);
+  box-shadow: 0 2px 12px var(--color-card-shadow);
+}
+
+.info {
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  font-weight: 600;
+  font-size: var(--font-size-base);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nickname {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-top: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+.occupation {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.favBtn {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  padding: var(--space-xs);
+  color: var(--color-text-tertiary);
+  flex-shrink: 0;
+}
+
+.favBtn:hover {
+  color: var(--color-warning);
+}
+
+.favActive {
+  color: var(--color-warning);
+}
