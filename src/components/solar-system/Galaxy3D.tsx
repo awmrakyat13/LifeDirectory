@@ -1,4 +1,4 @@
-import { Suspense, useRef, useEffect } from 'react';
+import { Suspense, useRef, useEffect, useMemo } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Stars } from '@react-three/drei';
 import type { OrbitControls as OrbitControlsType } from 'three-stdlib';
@@ -21,42 +21,97 @@ interface Galaxy3DProps {
   onReady?: (ref: Galaxy3DRef) => void;
 }
 
+// Slow-drifting dust with multiple color layers
 function DustField() {
-  const ref = useRef<THREE.Points>(null);
-  const count = 200;
+  const ref1 = useRef<THREE.Points>(null);
+  const ref2 = useRef<THREE.Points>(null);
 
-  const positions = new Float32Array(count * 3);
-  const sizes = new Float32Array(count);
-  for (let i = 0; i < count; i++) {
-    positions[i * 3] = (Math.random() - 0.5) * 250;
-    positions[i * 3 + 1] = (Math.random() - 0.5) * 250;
-    positions[i * 3 + 2] = (Math.random() - 0.5) * 30;
-    sizes[i] = Math.random() * 0.2 + 0.05;
-  }
+  const [pos1, pos2] = useMemo(() => {
+    const p1 = new Float32Array(250 * 3);
+    const p2 = new Float32Array(150 * 3);
+    for (let i = 0; i < 250; i++) {
+      p1[i * 3] = (Math.random() - 0.5) * 300;
+      p1[i * 3 + 1] = (Math.random() - 0.5) * 300;
+      p1[i * 3 + 2] = (Math.random() - 0.5) * 40;
+    }
+    for (let i = 0; i < 150; i++) {
+      p2[i * 3] = (Math.random() - 0.5) * 200;
+      p2[i * 3 + 1] = (Math.random() - 0.5) * 200;
+      p2[i * 3 + 2] = (Math.random() - 0.5) * 25;
+    }
+    return [p1, p2];
+  }, []);
 
   useFrame((state) => {
-    if (ref.current) {
-      ref.current.rotation.z = state.clock.elapsedTime * 0.003;
+    const t = state.clock.elapsedTime;
+    if (ref1.current) {
+      ref1.current.rotation.z = t * 0.002;
+      ref1.current.rotation.x = Math.sin(t * 0.008) * 0.015;
+    }
+    if (ref2.current) {
+      ref2.current.rotation.z = -t * 0.0015;
+      ref2.current.rotation.y = Math.cos(t * 0.006) * 0.01;
     }
   });
 
   return (
-    <points ref={ref}>
-      <bufferGeometry>
-        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
-        <bufferAttribute attach="attributes-size" args={[sizes, 1]} />
-      </bufferGeometry>
-      <pointsMaterial
-        color="#5DADE2"
-        size={0.1}
-        transparent
-        opacity={0.15}
-        sizeAttenuation
-        depthWrite={false}
-        blending={THREE.AdditiveBlending}
-      />
-    </points>
+    <>
+      <points ref={ref1}>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" args={[pos1, 3]} />
+        </bufferGeometry>
+        <pointsMaterial color="#5DADE2" size={0.08} transparent opacity={0.12} sizeAttenuation depthWrite={false} blending={THREE.AdditiveBlending} />
+      </points>
+      <points ref={ref2}>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" args={[pos2, 3]} />
+        </bufferGeometry>
+        <pointsMaterial color="#9B59B6" size={0.1} transparent opacity={0.08} sizeAttenuation depthWrite={false} blending={THREE.AdditiveBlending} />
+      </points>
+    </>
   );
+}
+
+// Slow-rotating nebula glow planes
+function NebulaPlanes() {
+  const ref = useRef<THREE.Group>(null);
+  useFrame((state) => {
+    if (ref.current) {
+      ref.current.rotation.z = state.clock.elapsedTime * 0.001;
+    }
+  });
+
+  return (
+    <group ref={ref}>
+      <mesh position={[0, 0, -4]}>
+        <circleGeometry args={[80, 32]} />
+        <meshBasicMaterial color="#0d0d2b" transparent opacity={0.07} blending={THREE.AdditiveBlending} depthWrite={false} />
+      </mesh>
+      <mesh position={[15, -10, -3.5]} rotation={[0, 0, 0.8]}>
+        <circleGeometry args={[45, 32]} />
+        <meshBasicMaterial color="#1a0a30" transparent opacity={0.05} blending={THREE.AdditiveBlending} depthWrite={false} />
+      </mesh>
+      <mesh position={[-20, 8, -3]} rotation={[0, 0, -0.4]}>
+        <circleGeometry args={[35, 32]} />
+        <meshBasicMaterial color="#0a1530" transparent opacity={0.04} blending={THREE.AdditiveBlending} depthWrite={false} />
+      </mesh>
+    </group>
+  );
+}
+
+// Ambient light that gently shifts color
+function ShiftingLight() {
+  const lightRef = useRef<THREE.PointLight>(null);
+  useFrame((state) => {
+    if (lightRef.current) {
+      const t = state.clock.elapsedTime;
+      const r = 0.95 + Math.sin(t * 0.3) * 0.05;
+      const g = 0.7 + Math.sin(t * 0.2 + 1) * 0.1;
+      const b = 0.4 + Math.sin(t * 0.15 + 2) * 0.1;
+      lightRef.current.color.setRGB(r, g, b);
+    }
+  });
+  return <pointLight ref={lightRef} position={[0, 0, 25]} intensity={1.0} distance={80} decay={2} />;
 }
 
 function getDefaultCameraPos(): [number, number, number] {
@@ -68,7 +123,6 @@ function CameraController({ onReady }: { onReady?: (ref: Galaxy3DRef) => void })
   const { camera } = useThree();
   const controlsRef = useRef<OrbitControlsType>(null);
 
-  // Set initial camera position based on screen size
   useEffect(() => {
     const pos = getDefaultCameraPos();
     camera.position.set(pos[0], pos[1], pos[2]);
@@ -135,37 +189,31 @@ function Scene({ layout, hoveredNodeId, onHover, onClick, onReady }: Galaxy3DPro
 
   return (
     <>
-      {/* Lighting — warm center + cool fill + ambient */}
-      <ambientLight intensity={0.4} color="#8899bb" />
-      <pointLight position={[0, 0, 25]} intensity={1.2} color="#F39C12" distance={80} decay={2} />
-      <pointLight position={[20, -15, 12]} intensity={0.3} color="#5DADE2" distance={50} decay={2} />
-      <directionalLight position={[0, 0, 30]} intensity={0.3} color="#ffffff" />
+      {/* Lighting */}
+      <ambientLight intensity={0.3} color="#8899bb" />
+      <ShiftingLight />
+      <pointLight position={[25, -18, 15]} intensity={0.2} color="#5DADE2" distance={60} decay={2} />
+      <directionalLight position={[0, 0, 30]} intensity={0.2} color="#ffffff" />
 
-      {/* Stars */}
-      <Stars radius={300} depth={100} count={3000} factor={3} saturation={0.2} fade speed={0.2} />
+      {/* Deep star field — two layers for parallax depth */}
+      <Stars radius={400} depth={120} count={2500} factor={3} saturation={0.15} fade speed={0.15} />
+      <Stars radius={200} depth={60} count={800} factor={5} saturation={0.4} fade speed={0.3} />
 
+      {/* Atmospheric particles */}
       <DustField />
 
-      {/* Galactic disc — layered glow planes for depth */}
-      <mesh position={[0, 0, -3]}>
-        <planeGeometry args={[150, 150]} />
-        <meshBasicMaterial color="#0d0d2b" transparent opacity={0.06} blending={THREE.AdditiveBlending} depthWrite={false} />
-      </mesh>
-      <mesh position={[0, 0, -2.5]} rotation={[0, 0, 0.3]}>
-        <planeGeometry args={[80, 80]} />
-        <meshBasicMaterial color="#1a1040" transparent opacity={0.05} blending={THREE.AdditiveBlending} depthWrite={false} />
-      </mesh>
-      <mesh position={[10, -5, -2]} rotation={[0, 0, -0.5]}>
-        <planeGeometry args={[50, 50]} />
-        <meshBasicMaterial color="#0a1a3a" transparent opacity={0.04} blending={THREE.AdditiveBlending} depthWrite={false} />
-      </mesh>
+      {/* Nebula background */}
+      <NebulaPlanes />
 
-      <fog attach="fog" args={['#060612', 60, 180]} />
+      {/* Fog for depth */}
+      <fog attach="fog" args={['#050510', 70, 200]} />
 
+      {/* Orbit rings */}
       {layout.rings.map((ring) => (
         <OrbitRing3D key={ring.ring} ring={ring} />
       ))}
 
+      {/* Connection lines */}
       {layout.connections.map((conn) => {
         const from = nodePositions.get(conn.fromId);
         const to = nodePositions.get(conn.toId);
@@ -181,6 +229,7 @@ function Scene({ layout, hoveredNodeId, onHover, onClick, onReady }: Galaxy3DPro
         );
       })}
 
+      {/* Orbit nodes */}
       {layout.nodes.map((node) => (
         <OrbitNode3D
           key={node.id}
@@ -192,6 +241,7 @@ function Scene({ layout, hoveredNodeId, onHover, onClick, onReady }: Galaxy3DPro
         />
       ))}
 
+      {/* Center node */}
       <OrbitNode3D
         node={layout.center}
         isCenter
@@ -209,7 +259,7 @@ export function Galaxy3D(props: Galaxy3DProps & { onReady?: (ref: Galaxy3DRef) =
   return (
     <Canvas
       camera={{ position: [0, -30, 55], fov: 55, near: 0.1, far: 500 }}
-      style={{ background: '#060612' }}
+      style={{ background: '#050510' }}
       dpr={[1, 2]}
       gl={{
         antialias: true,
