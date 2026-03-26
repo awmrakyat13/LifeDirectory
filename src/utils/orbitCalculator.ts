@@ -15,6 +15,7 @@ export interface OrbitNode {
   isOnPlatform: boolean;
   isReadOnly: boolean;
   daysSinceContact: number | null;
+  shareableInfo?: ShareableInfo;
 }
 
 export interface OrbitRing {
@@ -313,9 +314,18 @@ function computeDrillDown(input: OrbitInput): OrbitLayout {
   return { center, rings, nodes, connections };
 }
 
+export interface ShareableInfo {
+  firstName: string;
+  lastName: string;
+  birthday?: string;
+  anniversary?: string;
+  email?: string;
+}
+
 export interface CircleEntry {
   display: string;
   isOnPlatform: boolean;
+  shareable: ShareableInfo;
 }
 
 export function computeCircleOrbit(
@@ -349,6 +359,7 @@ export function computeCircleOrbit(
       isOnPlatform: entry.isOnPlatform,
       isReadOnly: true,
       daysSinceContact: null,
+      shareableInfo: entry.shareable,
     });
   });
 

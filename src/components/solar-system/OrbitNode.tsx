@@ -28,10 +28,10 @@ export const OrbitNode = memo(function OrbitNode({
   return (
     <g
       transform={`translate(${node.x}, ${node.y}) scale(${scale})`}
-      style={{ cursor: node.isReadOnly ? 'default' : 'pointer', transition: 'transform 300ms ease' }}
+      style={{ cursor: node.id === 'circle-center' ? 'default' : 'pointer', transition: 'transform 300ms ease' }}
       onPointerEnter={() => onHover(node.id)}
       onPointerLeave={() => onHover(null)}
-      onClick={() => !node.isReadOnly && onClick(node.id)}
+      onClick={() => node.id !== 'circle-center' && onClick(node.id)}
     >
       {/* Category color ring */}
       {node.categoryColor && !isCenter && (
@@ -98,6 +98,14 @@ export const OrbitNode = memo(function OrbitNode({
         />
       )}
 
+      {/* Add hint on read-only nodes */}
+      {node.isReadOnly && node.shareableInfo && !isCenter && (
+        <g>
+          <circle cx={r * 0.7} cy={-r * 0.7} r={5} fill="var(--color-accent)" stroke="var(--color-bg-primary)" strokeWidth={1.5} />
+          <text x={r * 0.7} y={-r * 0.7 + 3.5} textAnchor="middle" fill="white" fontSize={9} fontWeight={700}>+</text>
+        </g>
+      )}
+
       {/* Name label */}
       {(isHovered || isCenter) && (
         <text
@@ -108,6 +116,9 @@ export const OrbitNode = memo(function OrbitNode({
           fontWeight={isCenter ? 600 : 500}
         >
           {node.label}
+          {node.isReadOnly && node.shareableInfo && !isCenter && (
+            <tspan fill="var(--color-accent)" fontSize={10}> (tap to add)</tspan>
+          )}
         </text>
       )}
     </g>
