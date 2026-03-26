@@ -47,14 +47,11 @@ function userCollection(uid: string, name: string) {
 }
 
 export async function createUserProfile(uid: string, profile: UserProfile) {
-  await setDoc(userDoc(uid), { profile });
+  await setDoc(userDoc(uid), { profile: stripUndefined(profile as unknown as Record<string, unknown>) });
   // Store public profile in top-level searchable collection
-  await setDoc(doc(firestore, 'publicProfiles', uid), {
-    uid,
-    email: profile.email,
-    name: profile.name,
-    photoUrl: profile.photoUrl || undefined,
-  } satisfies PublicProfile);
+  const pub: Record<string, unknown> = { uid, email: profile.email, name: profile.name };
+  if (profile.photoUrl) pub.photoUrl = profile.photoUrl;
+  await setDoc(doc(firestore, 'publicProfiles', uid), pub);
 }
 
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
@@ -67,15 +64,12 @@ export async function updateUserProfile(uid: string, updates: Partial<UserProfil
   const current = await getUserProfile(uid);
   if (!current) return;
   const merged = { ...current, ...updates };
-  await setDoc(userDoc(uid), { profile: merged }, { merge: true });
+  await setDoc(userDoc(uid), { profile: stripUndefined(merged as unknown as Record<string, unknown>) }, { merge: true });
   // Update public profile if name/photo changed
   if (updates.name || updates.photoUrl !== undefined) {
-    await setDoc(doc(firestore, 'publicProfiles', uid), {
-      uid,
-      email: merged.email,
-      name: merged.name,
-      photoUrl: merged.photoUrl || null,
-    }, { merge: true });
+    const pub: Record<string, unknown> = { uid, email: merged.email, name: merged.name };
+    if (merged.photoUrl) pub.photoUrl = merged.photoUrl;
+    await setDoc(doc(firestore, 'publicProfiles', uid), pub, { merge: true });
   }
 }
 
@@ -86,14 +80,37 @@ export async function findUserByEmail(email: string): Promise<PublicProfile | nu
   return snap.docs[0].data() as PublicProfile;
 }
 
+// ---- Helpers ----
+
+// Firestore does not accept undefined values — strip them recursively
+function stripUndefined<T extends Record<string, unknown>>(obj: T): T {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value === undefined) continue;
+    if (value instanceof Blob) continue; // Firestore can't store Blobs
+    if (Array.isArray(value)) {
+      result[key] = value.map((item) =>
+        item && typeof item === 'object' && !(item instanceof Date)
+          ? stripUndefined(item as Record<string, unknown>)
+          : item
+      );
+    } else if (value && typeof value === 'object' && !(value instanceof Date)) {
+      result[key] = stripUndefined(value as Record<string, unknown>);
+    } else {
+      result[key] = value;
+    }
+  }
+  return result as T;
+}
+
 // ---- People CRUD ----
 
 export async function addPersonFs(uid: string, person: Person) {
-  await setDoc(doc(userCollection(uid, 'people'), person.id), person);
+  await setDoc(doc(userCollection(uid, 'people'), person.id), stripUndefined(person as unknown as Record<string, unknown>));
 }
 
 export async function updatePersonFs(uid: string, personId: string, updates: Partial<Person>) {
-  await updateDoc(doc(userCollection(uid, 'people'), personId), updates);
+  await updateDoc(doc(userCollection(uid, 'people'), personId), stripUndefined(updates as unknown as Record<string, unknown>));
 }
 
 export async function deletePersonFs(uid: string, personId: string) {
@@ -154,7 +171,7 @@ export function subscribePersonCategories(uid: string, callback: (pcs: PersonCat
 // ---- Interactions ----
 
 export async function addInteractionFs(uid: string, interaction: Interaction) {
-  await setDoc(doc(userCollection(uid, 'interactions'), interaction.id), interaction);
+  await setDoc(doc(userCollection(uid, 'interactions'), interaction.id), stripUndefined(interaction as unknown as Record<string, unknown>));
 }
 
 export async function deleteInteractionFs(uid: string, interactionId: string) {
