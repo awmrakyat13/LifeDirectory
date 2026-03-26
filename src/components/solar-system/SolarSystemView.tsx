@@ -5,7 +5,8 @@ import { usePeople } from '../../hooks/usePeople';
 import { useCategories } from '../../hooks/useCategories';
 import { getUserProfile, type UserProfile } from '../../firebase/firestore';
 import { subscribePersonCategories } from '../../firebase/firestore';
-import { computeOrbitLayout } from '../../utils/orbitCalculator';
+import { computeOrbitLayout, computeCircleOrbit, type OrbitLayout, type CircleEntry } from '../../utils/orbitCalculator';
+import { getCircleSnapshot } from '../../firebase/circleSnapshot';
 import { useSvgViewBox } from '../../hooks/useSvgViewBox';
 import type { PersonCategory } from '../../models/types';
 import { OrbitRing } from './OrbitRing';
@@ -49,6 +50,23 @@ export function SolarSystemView() {
   // Hover
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
 
+  // Remote circle (when viewing a platform user's orbit)
+  const [remoteCircle, setRemoteCircle] = useState<{ label: string; entries: CircleEntry[] } | null>(null);
+
+  // Load remote circle when drilling into an autolinked person
+  useEffect(() => {
+    if (currentCenterId !== 'me' && currentCenterId.startsWith('autolinked-')) {
+      const remoteUid = currentCenterId.replace('autolinked-', '');
+      const person = people.find((p) => p.id === currentCenterId);
+      const label = person ? `${person.firstName} ${person.lastName}` : 'Their Circle';
+      getCircleSnapshot(remoteUid).then((entries) => {
+        setRemoteCircle({ label, entries });
+      }).catch(() => setRemoteCircle(null));
+    } else {
+      setRemoteCircle(null);
+    }
+  }, [currentCenterId, people]);
+
   // Profile setup
   const [setupDismissed, setSetupDismissed] = useState(false);
   const needsSetup = !profileLoading && !profile && !setupDismissed;
@@ -56,19 +74,20 @@ export function SolarSystemView() {
   // Zoom/pan
   const { viewBox, svgProps, resetView } = useSvgViewBox(svgRef);
 
-  // Compute layout
-  const layout = useMemo(
-    () =>
-      computeOrbitLayout({
-        people,
-        categories,
-        personCategories,
-        centerPersonId: currentCenterId,
-        myName: profile?.name,
-        myPhotoBlob: undefined, // Photos stored as URLs in Firestore, not blobs
-      }),
-    [people, categories, personCategories, currentCenterId, profile?.name]
-  );
+  // Compute layout — use remote circle view when viewing a platform user
+  const layout: OrbitLayout = useMemo(() => {
+    if (remoteCircle && currentCenterId.startsWith('autolinked-')) {
+      return computeCircleOrbit(remoteCircle.label, remoteCircle.entries);
+    }
+    return computeOrbitLayout({
+      people,
+      categories,
+      personCategories,
+      centerPersonId: currentCenterId,
+      myName: profile?.name,
+      myPhotoBlob: undefined,
+    });
+  }, [people, categories, personCategories, currentCenterId, profile?.name, remoteCircle]);
 
   // Node position lookup for connection lines
   const nodePositions = useMemo(() => {

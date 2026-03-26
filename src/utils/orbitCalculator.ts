@@ -12,6 +12,8 @@ export interface OrbitNode {
   y: number;
   categoryColor?: string;
   isFavorite: boolean;
+  isOnPlatform: boolean;
+  isReadOnly: boolean;
   daysSinceContact: number | null;
 }
 
@@ -73,6 +75,8 @@ function makeNode(person: Person, ring: number, pos: { angle: number; x: number;
     y: pos.y,
     categoryColor,
     isFavorite: person.isFavorite,
+    isOnPlatform: person.id.startsWith('autolinked-'),
+    isReadOnly: false,
     daysSinceContact: person.lastInteractionDate ? daysSince(person.lastInteractionDate) : null,
   };
 }
@@ -129,6 +133,8 @@ function computeMeCenter(input: OrbitInput): OrbitLayout {
     x: 0,
     y: 0,
     isFavorite: false,
+    isOnPlatform: true,
+    isReadOnly: false,
     daysSinceContact: null,
   };
 
@@ -226,6 +232,8 @@ function computeDrillDown(input: OrbitInput): OrbitLayout {
     x: 0,
     y: 0,
     isFavorite: centerPerson.isFavorite,
+    isOnPlatform: centerPerson.id.startsWith('autolinked-'),
+    isReadOnly: false,
     daysSinceContact: centerPerson.lastInteractionDate ? daysSince(centerPerson.lastInteractionDate) : null,
   };
 
@@ -303,6 +311,48 @@ function computeDrillDown(input: OrbitInput): OrbitLayout {
   const connections = computeConnectionLines(visibleIds, people);
 
   return { center, rings, nodes, connections };
+}
+
+export interface CircleEntry {
+  display: string;
+  isOnPlatform: boolean;
+}
+
+export function computeCircleOrbit(
+  centerLabel: string,
+  circleEntries: CircleEntry[]
+): OrbitLayout {
+  const center: OrbitNode = {
+    id: 'circle-center',
+    label: centerLabel,
+    ring: 0, angle: 0, x: 0, y: 0,
+    isFavorite: false,
+    isOnPlatform: true,
+    isReadOnly: true,
+    daysSinceContact: null,
+  };
+
+  const nodes: OrbitNode[] = [];
+  const radius = SOLAR.BASE_RADIUS;
+  const rings: OrbitRing[] = [{ ring: 1, radius, label: 'Their Circle', color: '#888888' }];
+
+  circleEntries.forEach((entry, i) => {
+    const pos = positionOnRing(i, circleEntries.length, radius);
+    nodes.push({
+      id: `circle-${i}`,
+      label: entry.display,
+      ring: 1,
+      angle: pos.angle,
+      x: pos.x,
+      y: pos.y,
+      isFavorite: false,
+      isOnPlatform: entry.isOnPlatform,
+      isReadOnly: true,
+      daysSinceContact: null,
+    });
+  });
+
+  return { center, rings, nodes, connections: [] };
 }
 
 export function computeOrbitLayout(input: OrbitInput): OrbitLayout {

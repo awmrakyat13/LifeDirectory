@@ -10,6 +10,7 @@ import {
   deletePersonCategoriesForPerson,
 } from '../firebase/firestore';
 import { upsertMatchHint, deleteMatchHintsForPerson } from '../firebase/matchHints';
+import { updateCircleSnapshot, buildCircleEntries } from '../firebase/circleSnapshot';
 import type { Person, PersonCategory } from '../models/types';
 
 export function useFirestorePeople(categoryId?: string) {
@@ -19,7 +20,11 @@ export function useFirestorePeople(categoryId?: string) {
 
   useEffect(() => {
     if (!user) return;
-    const unsub1 = subscribePeople(user.uid, setPeople);
+    const unsub1 = subscribePeople(user.uid, (p) => {
+      setPeople(p);
+      // Sync circle snapshot for linked users to see
+      updateCircleSnapshot(user.uid, buildCircleEntries(p)).catch(() => {});
+    });
     const unsub2 = subscribePersonCategories(user.uid, setPersonCategories);
     return () => { unsub1(); unsub2(); };
   }, [user]);
