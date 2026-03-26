@@ -59,17 +59,28 @@ function DustField() {
   );
 }
 
+function getDefaultCameraPos(): [number, number, number] {
+  const isMobile = window.innerWidth < 768;
+  return isMobile ? [0, -35, 70] : [0, -20, 40];
+}
+
 function CameraController({ onReady }: { onReady?: (ref: Galaxy3DRef) => void }) {
   const { camera } = useThree();
   const controlsRef = useRef<OrbitControlsType>(null);
+
+  // Set initial camera position based on screen size
+  useEffect(() => {
+    const pos = getDefaultCameraPos();
+    camera.position.set(pos[0], pos[1], pos[2]);
+  }, [camera]);
 
   useEffect(() => {
     if (onReady) {
       onReady({
         jumpToRing: (radius: number) => {
           const scaledR = radius * 0.1;
-          const dist = scaledR + 20;
-          // Smoothly move camera target to origin and position above the ring
+          const isMobile = window.innerWidth < 768;
+          const dist = scaledR + (isMobile ? 35 : 20);
           if (controlsRef.current) {
             controlsRef.current.target.set(0, 0, 0);
           }
@@ -77,7 +88,8 @@ function CameraController({ onReady }: { onReady?: (ref: Galaxy3DRef) => void })
           camera.lookAt(0, 0, 0);
         },
         resetCamera: () => {
-          camera.position.set(0, -20, 40);
+          const pos = getDefaultCameraPos();
+          camera.position.set(pos[0], pos[1], pos[2]);
           if (controlsRef.current) {
             controlsRef.current.target.set(0, 0, 0);
           }
@@ -196,7 +208,7 @@ function Scene({ layout, hoveredNodeId, onHover, onClick, onReady }: Galaxy3DPro
 export function Galaxy3D(props: Galaxy3DProps & { onReady?: (ref: Galaxy3DRef) => void }) {
   return (
     <Canvas
-      camera={{ position: [0, -20, 40], fov: 55, near: 0.1, far: 500 }}
+      camera={{ position: [0, -30, 55], fov: 55, near: 0.1, far: 500 }}
       style={{ background: '#060612' }}
       dpr={[1, 2]}
       gl={{
