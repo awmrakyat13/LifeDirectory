@@ -62,16 +62,30 @@ function Scene({ layout, hoveredNodeId, onHover, onClick }: Galaxy3DProps) {
 
   return (
     <>
-      {/* Lighting — single warm center + dim ambient */}
-      <ambientLight intensity={0.2} color="#8899bb" />
-      <pointLight position={[0, 0, 20]} intensity={0.8} color="#F39C12" distance={70} decay={2} />
+      {/* Lighting — warm center + cool fill + ambient */}
+      <ambientLight intensity={0.4} color="#8899bb" />
+      <pointLight position={[0, 0, 25]} intensity={1.2} color="#F39C12" distance={80} decay={2} />
+      <pointLight position={[20, -15, 12]} intensity={0.3} color="#5DADE2" distance={50} decay={2} />
+      <directionalLight position={[0, 0, 30]} intensity={0.3} color="#ffffff" />
 
-      {/* Stars — backdrop, not distraction */}
+      {/* Stars */}
       <Stars radius={300} depth={100} count={3000} factor={3} saturation={0.2} fade speed={0.2} />
 
       <DustField />
 
-      <fog attach="fog" args={['#060612', 80, 220]} />
+      {/* Galactic disc plane — faint elliptical glow beneath everything */}
+      <mesh rotation={[0, 0, 0]} position={[0, 0, -2]}>
+        <planeGeometry args={[120, 120]} />
+        <meshBasicMaterial
+          color="#1a1a3e"
+          transparent
+          opacity={0.08}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </mesh>
+
+      <fog attach="fog" args={['#060612', 60, 180]} />
 
       {layout.rings.map((ring) => (
         <OrbitRing3D key={ring.ring} ring={ring} />

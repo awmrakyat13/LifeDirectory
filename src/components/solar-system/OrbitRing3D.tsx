@@ -1,6 +1,5 @@
 import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Line } from '@react-three/drei';
 import * as THREE from 'three';
 import type { OrbitRing } from '../../utils/orbitCalculator';
 
@@ -9,61 +8,60 @@ interface OrbitRing3DProps {
 }
 
 export function OrbitRing3D({ ring }: OrbitRing3DProps) {
-  const groupRef = useRef<THREE.Group>(null);
   const arcGroupRef = useRef<THREE.Group>(null);
   const radius = ring.radius * 0.1;
-  const segments = 192;
+  const tubeRadius = 0.03;
+  const segments = 128;
 
   useFrame(() => {
-    // Full ring slowly rotates
-    if (groupRef.current) {
-      groupRef.current.rotation.z += 0.0001 / (ring.ring + 1);
-    }
-    // Accent arc rotates faster
     if (arcGroupRef.current) {
-      arcGroupRef.current.rotation.z += 0.0008 / (ring.ring + 1);
+      arcGroupRef.current.rotation.z += 0.0005 / (ring.ring + 1);
     }
   });
 
-  const ringPoints = useMemo(() => {
-    const pts: THREE.Vector3[] = [];
-    for (let i = 0; i <= segments; i++) {
-      const angle = (i / segments) * Math.PI * 2;
-      pts.push(new THREE.Vector3(Math.cos(angle) * radius, Math.sin(angle) * radius, 0));
-    }
-    return pts;
-  }, [radius]);
+  // Full orbit ring as a thin torus
+  const ringColor = useMemo(() => new THREE.Color(ring.color), [ring.color]);
 
-  const arcPoints = useMemo(() => {
+  // Accent arc curve (15% of the circle)
+  const arcCurve = useMemo(() => {
     const pts: THREE.Vector3[] = [];
-    const arcLen = Math.floor(segments * 0.12);
+    const arcLen = Math.floor(segments * 0.15);
     for (let i = 0; i <= arcLen; i++) {
       const angle = (i / segments) * Math.PI * 2;
       pts.push(new THREE.Vector3(Math.cos(angle) * radius, Math.sin(angle) * radius, 0));
     }
-    return pts;
+    return new THREE.CatmullRomCurve3(pts);
   }, [radius]);
 
-  // Second accent arc on opposite side
-  const arc2Points = useMemo(() => {
+  // Secondary smaller arc on opposite side
+  const arc2Curve = useMemo(() => {
     const pts: THREE.Vector3[] = [];
-    const arcLen = Math.floor(segments * 0.06);
-    const offset = Math.PI;
+    const arcLen = Math.floor(segments * 0.07);
     for (let i = 0; i <= arcLen; i++) {
-      const angle = offset + (i / segments) * Math.PI * 2;
+      const angle = Math.PI + (i / segments) * Math.PI * 2;
       pts.push(new THREE.Vector3(Math.cos(angle) * radius, Math.sin(angle) * radius, 0));
     }
-    return pts;
+    return new THREE.CatmullRomCurve3(pts);
   }, [radius]);
 
   return (
     <>
-      <group ref={groupRef}>
-        <Line points={ringPoints} color={ring.color} lineWidth={0.6} transparent opacity={0.06} />
-      </group>
+      {/* Full orbit path — thin glowing torus */}
+      <mesh>
+        <torusGeometry args={[radius, tubeRadius, 6, segments]} />
+        <meshBasicMaterial color={ringColor} transparent opacity={0.12} />
+      </mesh>
+
+      {/* Rotating accent arcs — thicker tubes */}
       <group ref={arcGroupRef}>
-        <Line points={arcPoints} color={ring.color} lineWidth={2} transparent opacity={0.5} />
-        <Line points={arc2Points} color={ring.color} lineWidth={1.2} transparent opacity={0.25} />
+        <mesh>
+          <tubeGeometry args={[arcCurve, 32, tubeRadius * 3, 8, false]} />
+          <meshBasicMaterial color={ringColor} transparent opacity={0.45} />
+        </mesh>
+        <mesh>
+          <tubeGeometry args={[arc2Curve, 20, tubeRadius * 2, 8, false]} />
+          <meshBasicMaterial color={ringColor} transparent opacity={0.25} />
+        </mesh>
       </group>
     </>
   );
