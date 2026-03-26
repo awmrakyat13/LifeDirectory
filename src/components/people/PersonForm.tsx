@@ -4,7 +4,7 @@ import { useCategories } from '../../hooks/useCategories';
 import { usePersonActions } from '../../hooks/usePeople';
 import { useToast } from '../ui/Toast';
 import { compressImage } from '../../utils/image';
-import type { Person, Child, Pet, ContactEntry, SocialMediaEntry, NamedDate } from '../../models/types';
+import type { Person, Child, Pet, ContactEntry, SocialMediaEntry, NamedDate, KnownThrough } from '../../models/types';
 import styles from './PersonForm.module.css';
 
 import { IdentitySection } from './sections/IdentitySection';
@@ -15,6 +15,7 @@ import { WorkLifeSection } from './sections/WorkLifeSection';
 import { ContactSection } from './sections/ContactSection';
 import { MemorySection } from './sections/MemorySection';
 import { LinkedPeopleSection } from './sections/LinkedPeopleSection';
+import { KnownThroughSection } from './sections/KnownThroughSection';
 
 interface PersonFormProps {
   initialData?: Person;
@@ -62,6 +63,7 @@ export function PersonForm({ initialData, initialCategoryIds }: PersonFormProps)
 
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>(initialCategoryIds ?? []);
   const [linkedPersonIds, setLinkedPersonIds] = useState<string[]>(initialData?.linkedPersonIds ?? []);
+  const [knownThrough, setKnownThrough] = useState<KnownThrough | undefined>(initialData?.knownThrough);
   const [isFavorite] = useState(initialData?.isFavorite ?? false);
 
   async function handlePhotoSelect(e: React.ChangeEvent<HTMLInputElement>) {
@@ -96,6 +98,7 @@ export function PersonForm({ initialData, initialCategoryIds }: PersonFormProps)
       children: children.length > 0 ? children : undefined,
       pets: pets.length > 0 ? pets : undefined,
       linkedPersonIds: linkedPersonIds.length > 0 ? linkedPersonIds : undefined,
+      knownThrough,
       occupation: occupation || undefined,
       company: company || undefined,
       interests: interests.length > 0 ? interests : undefined,
@@ -193,6 +196,12 @@ export function PersonForm({ initialData, initialCategoryIds }: PersonFormProps)
         setSocialMedia={setSocialMedia}
         address={address}
         setAddress={setAddress}
+      />
+
+      <KnownThroughSection
+        knownThrough={knownThrough}
+        setKnownThrough={setKnownThrough}
+        currentPersonId={initialData?.id}
       />
 
       <LinkedPeopleSection

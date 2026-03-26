@@ -100,13 +100,32 @@ export function PersonDetail({ person, categories }: PersonDetailProps) {
         <button className={styles.deleteBtn} onClick={() => setShowDeleteConfirm(true)}>Delete</button>
       </div>
 
-      {person.howWeMet && (
+      {(person.howWeMet || person.knownThrough) && (
         <div className={styles.section}>
           <h3 className={styles.sectionTitle}>About</h3>
-          <div className={styles.field}>
-            <div className={styles.fieldLabel}>How We Met</div>
-            <div className={styles.howWeMet}>{person.howWeMet}</div>
-          </div>
+          {person.knownThrough && (() => {
+            const connector = allPeople.find((p) => p.id === person.knownThrough!.personId);
+            if (!connector) return null;
+            return (
+              <div className={styles.field}>
+                <div className={styles.fieldLabel}>Known Through</div>
+                <div className={styles.fieldValue}>
+                  <Link to={`/people/${connector.id}`} style={{ color: 'var(--color-accent)', textDecoration: 'none', fontWeight: 500 }}>
+                    {connector.firstName} {connector.lastName}
+                  </Link>
+                  {person.knownThrough!.context && (
+                    <span style={{ color: 'var(--color-text-secondary)' }}> ({person.knownThrough!.context})</span>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+          {person.howWeMet && (
+            <div className={styles.field}>
+              <div className={styles.fieldLabel}>How We Met</div>
+              <div className={styles.howWeMet}>{person.howWeMet}</div>
+            </div>
+          )}
         </div>
       )}
 

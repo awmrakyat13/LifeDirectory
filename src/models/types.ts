@@ -23,6 +23,11 @@ export interface SocialMediaEntry {
   handle: string;
 }
 
+export interface KnownThrough {
+  personId: string;
+  context: string;
+}
+
 export interface Person {
   id: string;
 
@@ -44,6 +49,7 @@ export interface Person {
   children?: Child[];
   pets?: Pet[];
   linkedPersonIds?: string[];
+  knownThrough?: KnownThrough;
 
   // Work & Life
   occupation?: string;

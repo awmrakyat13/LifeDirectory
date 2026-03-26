@@ -99,6 +99,17 @@ function computeConnectionLines(visibleIds: Set<string>, people: Person[]): Conn
     }
   }
 
+  // Known-through connections
+  for (const person of people) {
+    if (!visibleIds.has(person.id) || !person.knownThrough) continue;
+    const connectorId = person.knownThrough.personId;
+    if (!visibleIds.has(connectorId)) continue;
+    const key = [person.id, connectorId].sort().join('|');
+    if (seen.has(key)) continue;
+    seen.add(key);
+    connections.push({ fromId: person.id, toId: connectorId, type: 'linked' });
+  }
+
   // Same company
   const companyMap = new Map<string, string[]>();
   for (const person of people) {
@@ -253,8 +264,14 @@ function computeDrillDown(input: OrbitInput): OrbitLayout {
   const rings: OrbitRing[] = [];
   let ringNum = 1;
 
-  // Ring 1: Explicitly linked
+  // Ring 1: Explicitly linked + people known through this person
   const linkedIds = new Set(centerPerson.linkedPersonIds ?? []);
+  // Also include people whose knownThrough references the center person
+  const knownThroughIds = people
+    .filter((p) => p.knownThrough?.personId === centerPersonId && !linkedIds.has(p.id))
+    .map((p) => p.id);
+  for (const id of knownThroughIds) linkedIds.add(id);
+
   const linked = people.filter((p) => linkedIds.has(p.id)).sort(interactionSort);
   if (linked.length > 0) {
     const radius = SOLAR.BASE_RADIUS;
