@@ -7,25 +7,41 @@ interface OrbitRingProps {
 
 export const OrbitRing = memo(function OrbitRing({ ring }: OrbitRingProps) {
   return (
-    <g>
+    <g filter="url(#ringGlow)">
+      {/* Faint full orbit path */}
       <circle
-        cx={0}
-        cy={0}
-        r={ring.radius}
+        cx={0} cy={0} r={ring.radius}
         fill="none"
         stroke={ring.color}
-        strokeOpacity={0.12}
+        strokeOpacity={0.08}
         strokeWidth={1}
-        strokeDasharray="6 10"
       />
+      {/* Animated glowing accent dash */}
+      <circle
+        cx={0} cy={0} r={ring.radius}
+        fill="none"
+        stroke={ring.color}
+        strokeOpacity={0.25}
+        strokeWidth={1.5}
+        strokeDasharray={`${ring.radius * 0.3} ${ring.radius * 6}`}
+      >
+        <animateTransform
+          attributeName="transform"
+          type="rotate"
+          from="0 0 0"
+          to="360 0 0"
+          dur={`${80 + ring.ring * 20}s`}
+          repeatCount="indefinite"
+        />
+      </circle>
+      {/* Ring label */}
       <text
-        x={0}
-        y={-ring.radius - 10}
+        x={0} y={-ring.radius - 10}
         textAnchor="middle"
         fill={ring.color}
-        fillOpacity={0.4}
-        fontSize={12}
-        fontWeight={500}
+        fillOpacity={0.3}
+        fontSize={11}
+        fontWeight={400}
       >
         {ring.label}
       </text>

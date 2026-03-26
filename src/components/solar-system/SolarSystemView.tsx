@@ -17,6 +17,7 @@ import { OrbitNode } from './OrbitNode';
 import { ConnectionLine } from './ConnectionLine';
 import { Breadcrumbs } from './Breadcrumbs';
 import { ProfileSetupModal } from './ProfileSetupModal';
+import { GalaxyFilters, StarField, NebulaBackground } from './GalaxyEffects';
 import styles from './SolarSystemView.module.css';
 
 export function SolarSystemView() {
@@ -184,12 +185,17 @@ export function SolarSystemView() {
         />
       )}
 
+      <div className={styles.svgWrapper}>
       <svg
         ref={svgRef}
         className={styles.svg}
         viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`}
         {...svgProps}
       >
+        <GalaxyFilters />
+        <NebulaBackground />
+        <StarField />
+
         {layout.rings.map((ring) => (
           <OrbitRing key={ring.ring} ring={ring} />
         ))}
@@ -230,6 +236,7 @@ export function SolarSystemView() {
           onClick={handleNodeClick}
         />
       </svg>
+      </div>
 
       <div className={styles.zoomHint}>
         <button className={styles.zoomBtn} onClick={() => zoom(0.5)} aria-label="Zoom in">+</button>
