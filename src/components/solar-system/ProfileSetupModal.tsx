@@ -1,7 +1,8 @@
 import { useState, useRef } from 'react';
 import { Modal } from '../ui/Modal';
 import { compressImage } from '../../utils/image';
-import { db } from '../../db/database';
+import { useAuth } from '../../hooks/useAuth';
+import { createUserProfile, type UserProfile } from '../../firebase/firestore';
 import styles from './ProfileSetupModal.module.css';
 
 interface ProfileSetupModalProps {
@@ -9,83 +10,88 @@ interface ProfileSetupModalProps {
 }
 
 export function ProfileSetupModal({ onComplete }: ProfileSetupModalProps) {
+  const { user } = useAuth();
   const [name, setName] = useState('');
-  const [photoBlob, setPhotoBlob] = useState<Blob | undefined>();
-  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [phone, setPhone] = useState('');
+  const [birthday, setBirthday] = useState('');
+  const [photoUrl, setPhotoUrl] = useState<string | undefined>();
+  const [loading, setLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function handlePhotoSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (file) {
       const compressed = await compressImage(file);
-      setPhotoBlob(compressed);
-      if (photoUrl) URL.revokeObjectURL(photoUrl);
-      setPhotoUrl(URL.createObjectURL(compressed));
+      const reader = new FileReader();
+      reader.onload = () => setPhotoUrl(reader.result as string);
+      reader.readAsDataURL(compressed);
     }
   }
 
   async function handleSubmit() {
-    if (!name.trim()) return;
-    await db.settings.update('singleton', {
-      myName: name.trim(),
-      myPhotoBlob: photoBlob,
-    });
-    if (photoUrl) URL.revokeObjectURL(photoUrl);
+    if (!name.trim() || !user) return;
+    setLoading(true);
+
+    const profile: UserProfile = {
+      uid: user.uid,
+      email: user.email || '',
+      name: name.trim(),
+      photoUrl,
+      phone: phone || undefined,
+      birthday: birthday || undefined,
+      createdAt: new Date().toISOString(),
+    };
+
+    await createUserProfile(user.uid, profile);
+    setLoading(false);
     onComplete();
   }
 
   function handleSkip() {
-    db.settings.update('singleton', { myName: 'Me' });
+    if (!user) return;
+    createUserProfile(user.uid, {
+      uid: user.uid,
+      email: user.email || '',
+      name: user.displayName || 'Me',
+      createdAt: new Date().toISOString(),
+    });
     onComplete();
   }
 
   return (
-    <Modal title="Welcome to Life Directory" onClose={handleSkip} hideClose>
+    <Modal title="Set Up Your Profile" onClose={handleSkip} hideClose>
       <div className={styles.form}>
         <div className={styles.photoSection}>
           {photoUrl ? (
-            <img className={styles.photoPreview} src={photoUrl} alt="Your photo" />
+            <img className={styles.photoPreview} src={photoUrl} alt="Your photo" onClick={() => fileRef.current?.click()} />
           ) : (
-            <div
-              className={styles.photoPlaceholder}
-              onClick={() => fileRef.current?.click()}
-            >
-              +
-            </div>
+            <div className={styles.photoPlaceholder} onClick={() => fileRef.current?.click()}>+</div>
           )}
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            onChange={handlePhotoSelect}
-            style={{ display: 'none' }}
-          />
+          <input ref={fileRef} type="file" accept="image/*" onChange={handlePhotoSelect} style={{ display: 'none' }} />
           <button type="button" className={styles.photoBtn} onClick={() => fileRef.current?.click()}>
-            {photoBlob ? 'Change Photo' : 'Add Photo'}
+            {photoUrl ? 'Change Photo' : 'Add Photo'}
           </button>
         </div>
 
         <div className={styles.nameField}>
-          <label className={styles.label}>Your Name</label>
-          <input
-            className={styles.input}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Enter your name"
-            autoFocus
-          />
+          <label className={styles.label}>Your Name *</label>
+          <input className={styles.input} value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter your name" autoFocus />
         </div>
 
-        <button
-          className={styles.startBtn}
-          onClick={handleSubmit}
-          disabled={!name.trim()}
-        >
-          Get Started
+        <div className={styles.nameField}>
+          <label className={styles.label}>Phone</label>
+          <input className={styles.input} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Optional" type="tel" />
+        </div>
+
+        <div className={styles.nameField}>
+          <label className={styles.label}>Birthday</label>
+          <input className={styles.input} value={birthday} onChange={(e) => setBirthday(e.target.value)} type="date" />
+        </div>
+
+        <button className={styles.startBtn} onClick={handleSubmit} disabled={!name.trim() || loading}>
+          {loading ? 'Saving...' : 'Get Started'}
         </button>
-        <button className={styles.skipBtn} onClick={handleSkip}>
-          Skip for now
-        </button>
+        <button className={styles.skipBtn} onClick={handleSkip}>Skip for now</button>
       </div>
     </Modal>
   );

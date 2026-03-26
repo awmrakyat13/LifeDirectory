@@ -1,9 +1,13 @@
-import { useState, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../../db/database';
+import { useAuth } from '../../hooks/useAuth';
+import { usePeople } from '../../hooks/usePeople';
+import { useCategories } from '../../hooks/useCategories';
+import { getUserProfile, type UserProfile } from '../../firebase/firestore';
+import { subscribePersonCategories } from '../../firebase/firestore';
 import { computeOrbitLayout } from '../../utils/orbitCalculator';
 import { useSvgViewBox } from '../../hooks/useSvgViewBox';
+import type { PersonCategory } from '../../models/types';
 import { OrbitRing } from './OrbitRing';
 import { OrbitNode } from './OrbitNode';
 import { ConnectionLine } from './ConnectionLine';
@@ -14,12 +18,29 @@ import styles from './SolarSystemView.module.css';
 export function SolarSystemView() {
   const svgRef = useRef<SVGSVGElement>(null);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
-  // Data
-  const people = useLiveQuery(() => db.people.toArray(), [], []);
-  const categories = useLiveQuery(() => db.categories.orderBy('sortOrder').toArray(), [], []);
-  const personCategories = useLiveQuery(() => db.personCategories.toArray(), [], []);
-  const settings = useLiveQuery(() => db.settings.get('singleton'));
+  // Data from Firestore hooks
+  const people = usePeople();
+  const { categories } = useCategories();
+  const [personCategories, setPersonCategories] = useState<PersonCategory[]>([]);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+
+  // Load person-categories
+  useEffect(() => {
+    if (!user) return;
+    return subscribePersonCategories(user.uid, setPersonCategories);
+  }, [user]);
+
+  // Load user profile
+  useEffect(() => {
+    if (!user) return;
+    getUserProfile(user.uid).then((p) => {
+      setProfile(p);
+      setProfileLoading(false);
+    });
+  }, [user]);
 
   // Drill-down state
   const [centerStack, setCenterStack] = useState<Array<'me' | string>>(['me']);
@@ -30,7 +51,7 @@ export function SolarSystemView() {
 
   // Profile setup
   const [setupDismissed, setSetupDismissed] = useState(false);
-  const needsSetup = settings !== undefined && !settings?.myName && !setupDismissed;
+  const needsSetup = !profileLoading && !profile && !setupDismissed;
 
   // Zoom/pan
   const { viewBox, svgProps, resetView } = useSvgViewBox(svgRef);
@@ -43,10 +64,10 @@ export function SolarSystemView() {
         categories,
         personCategories,
         centerPersonId: currentCenterId,
-        myName: settings?.myName,
-        myPhotoBlob: settings?.myPhotoBlob,
+        myName: profile?.name,
+        myPhotoBlob: undefined, // Photos stored as URLs in Firestore, not blobs
       }),
-    [people, categories, personCategories, currentCenterId, settings?.myName, settings?.myPhotoBlob]
+    [people, categories, personCategories, currentCenterId, profile?.name]
   );
 
   // Node position lookup for connection lines
@@ -89,11 +110,16 @@ export function SolarSystemView() {
         clientX: (svgRef.current?.getBoundingClientRect().width ?? 0) / 2,
         clientY: (svgRef.current?.getBoundingClientRect().height ?? 0) / 2,
       } as unknown as React.WheelEvent;
-      // Apply 3 zoom steps for button clicks
       for (let i = 0; i < 3; i++) svgProps.onWheel(syntheticEvent);
     },
     [svgProps]
   );
+
+  function handleSetupComplete() {
+    setSetupDismissed(true);
+    // Reload profile
+    if (user) getUserProfile(user.uid).then(setProfile);
+  }
 
   return (
     <div className={styles.container}>
@@ -101,7 +127,7 @@ export function SolarSystemView() {
         <Breadcrumbs
           stack={centerStack}
           people={people}
-          myName={settings?.myName}
+          myName={profile?.name}
           onNavigate={handleBreadcrumbClick}
         />
       )}
@@ -112,12 +138,10 @@ export function SolarSystemView() {
         viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`}
         {...svgProps}
       >
-        {/* Orbit rings */}
         {layout.rings.map((ring) => (
           <OrbitRing key={ring.ring} ring={ring} />
         ))}
 
-        {/* Connection lines */}
         <g className={styles.connectionsLayer}>
           {layout.connections.map((conn) => {
             const from = nodePositions.get(conn.fromId);
@@ -135,7 +159,6 @@ export function SolarSystemView() {
           })}
         </g>
 
-        {/* Orbit nodes */}
         {layout.nodes.map((node) => (
           <OrbitNode
             key={node.id}
@@ -147,7 +170,6 @@ export function SolarSystemView() {
           />
         ))}
 
-        {/* Center node (always on top) */}
         <OrbitNode
           node={layout.center}
           isCenter
@@ -157,20 +179,19 @@ export function SolarSystemView() {
         />
       </svg>
 
-      {/* Zoom controls */}
       <div className={styles.zoomHint}>
         <button className={styles.zoomBtn} onClick={() => zoom(0.5)} aria-label="Zoom in">+</button>
         <button className={styles.zoomBtn} onClick={() => zoom(2)} aria-label="Zoom out">&minus;</button>
         <button className={styles.zoomBtn} onClick={resetView} aria-label="Reset view">{'\u2316'}</button>
       </div>
 
-      {people.length === 0 && (
+      {people.length === 0 && !needsSetup && (
         <div className={styles.emptyHint}>
           Add people to see your solar system come alive
         </div>
       )}
 
-      {needsSetup && <ProfileSetupModal onComplete={() => setSetupDismissed(true)} />}
+      {needsSetup && <ProfileSetupModal onComplete={handleSetupComplete} />}
     </div>
   );
 }

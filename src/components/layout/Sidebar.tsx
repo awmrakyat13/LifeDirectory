@@ -1,8 +1,11 @@
 import { NavLink } from 'react-router-dom';
 import { NAV_ITEMS } from '../../constants/navigation';
+import { useAuth } from '../../hooks/useAuth';
 import styles from './Sidebar.module.css';
 
 export function Sidebar() {
+  const { user, logout } = useAuth();
+
   return (
     <aside className={styles.sidebar}>
       <div className={styles.logo}>Life Directory</div>
@@ -21,6 +24,14 @@ export function Sidebar() {
           </NavLink>
         ))}
       </nav>
+      {user && (
+        <div className={styles.userSection}>
+          <div className={styles.userEmail}>{user.email}</div>
+          <button className={styles.signOutBtn} onClick={logout}>
+            Sign Out
+          </button>
+        </div>
+      )}
     </aside>
   );
 }

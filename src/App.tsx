@@ -4,6 +4,8 @@ import { AppShell } from './components/layout/AppShell';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { ToastProvider } from './components/ui/Toast';
 import { PersonCardSkeletonList } from './components/ui/Skeleton';
+import { AuthGuard } from './components/auth/AuthGuard';
+import { AuthContext, useAuthProvider } from './hooks/useAuth';
 import { useTheme } from './hooks/useTheme';
 
 const HomePage = lazy(() => import('./pages/HomePage').then((m) => ({ default: m.HomePage })));
@@ -38,13 +40,19 @@ function AppContent() {
 }
 
 export function App() {
+  const authValue = useAuthProvider();
+
   return (
     <ErrorBoundary>
-      <HashRouter>
-        <ToastProvider>
-          <AppContent />
-        </ToastProvider>
-      </HashRouter>
+      <AuthContext.Provider value={authValue}>
+        <HashRouter>
+          <ToastProvider>
+            <AuthGuard>
+              <AppContent />
+            </AuthGuard>
+          </ToastProvider>
+        </HashRouter>
+      </AuthContext.Provider>
     </ErrorBoundary>
   );
 }

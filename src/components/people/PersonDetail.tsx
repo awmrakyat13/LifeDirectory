@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../../db/database';
+import { usePeople } from '../../hooks/usePeople';
+import { useInteractions } from '../../hooks/useInteractions';
 import { Avatar } from '../ui/Avatar';
 import { CategoryPill } from '../categories/CategoryPill';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
@@ -22,29 +22,29 @@ export function PersonDetail({ person, categories }: PersonDetailProps) {
   const { toast } = useToast();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  // Fetch linked people
-  const linkedPeople = useLiveQuery(async () => {
-    if (!person.linkedPersonIds || person.linkedPersonIds.length === 0) return [];
-    return db.people.where('id').anyOf(person.linkedPersonIds).toArray();
-  }, [person.linkedPersonIds], []);
+  // Fetch linked people from Firestore
+  const allPeople = usePeople();
+  const linkedPeople = (person.linkedPersonIds && person.linkedPersonIds.length > 0)
+    ? allPeople.filter((p) => person.linkedPersonIds!.includes(p.id))
+    : [];
 
   // Interaction stats
-  const interactionStats = useLiveQuery(async () => {
-    const interactions = await db.interactions.where('personId').equals(person.id).toArray();
-    if (interactions.length === 0) return null;
-    const sorted = interactions.sort((a, b) => a.date.localeCompare(b.date));
-    const totalCount = interactions.length;
+  const { interactions: allInteractions } = useInteractions(person.id);
+  const interactionStats = (() => {
+    if (allInteractions.length === 0) return null;
+    const sorted = [...allInteractions].sort((a, b) => a.date.localeCompare(b.date));
+    const totalCount = allInteractions.length;
     const firstDate = sorted[0].date;
     const lastDate = sorted[sorted.length - 1].date;
     const daySpan = Math.max(1, Math.floor((new Date(lastDate).getTime() - new Date(firstDate).getTime()) / (1000 * 60 * 60 * 24)));
     const avgDaysBetween = totalCount > 1 ? Math.round(daySpan / (totalCount - 1)) : null;
     const typeCounts: Record<string, number> = {};
-    for (const i of interactions) {
+    for (const i of allInteractions) {
       typeCounts[i.type] = (typeCounts[i.type] || 0) + 1;
     }
     const mostCommonType = Object.entries(typeCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
     return { totalCount, avgDaysBetween, mostCommonType };
-  }, [person.id]);
+  })();
 
   async function handleDelete() {
     const name = `${person.firstName} ${person.lastName}`;

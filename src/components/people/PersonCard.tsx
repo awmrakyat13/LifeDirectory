@@ -1,10 +1,11 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../../db/database';
+import { useAuth } from '../../hooks/useAuth';
+import { subscribePersonCategories, subscribeCategories } from '../../firebase/firestore';
 import { Avatar } from '../ui/Avatar';
 import { CategoryPill } from '../categories/CategoryPill';
 import { usePersonActions } from '../../hooks/usePeople';
-import type { Person } from '../../models/types';
+import type { Person, Category, PersonCategory } from '../../models/types';
 import styles from './PersonCard.module.css';
 
 interface PersonCardProps {
@@ -12,17 +13,22 @@ interface PersonCardProps {
 }
 
 export function PersonCard({ person }: PersonCardProps) {
+  const { user } = useAuth();
   const { toggleFavorite } = usePersonActions();
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [personCategories, setPersonCategories] = useState<PersonCategory[]>([]);
 
-  const categories = useLiveQuery(async () => {
-    const joins = await db.personCategories
-      .where('personId')
-      .equals(person.id)
-      .toArray();
-    const catIds = joins.map((j) => j.categoryId);
-    if (catIds.length === 0) return [];
-    return db.categories.where('id').anyOf(catIds).toArray();
-  }, [person.id], []);
+  useEffect(() => {
+    if (!user) return;
+    const unsub1 = subscribeCategories(user.uid, setCategories);
+    const unsub2 = subscribePersonCategories(user.uid, setPersonCategories);
+    return () => { unsub1(); unsub2(); };
+  }, [user]);
+
+  const personCatIds = personCategories
+    .filter((pc) => pc.personId === person.id)
+    .map((pc) => pc.categoryId);
+  const personCats = categories.filter((c) => personCatIds.includes(c.id));
 
   return (
     <div className={styles.card}>
@@ -48,9 +54,9 @@ export function PersonCard({ person }: PersonCardProps) {
               </span>
             )}
           </div>
-          {categories.length > 0 && (
+          {personCats.length > 0 && (
             <div className={styles.meta}>
-              {categories.map((cat) => (
+              {personCats.map((cat) => (
                 <CategoryPill key={cat.id} name={cat.name} color={cat.color} />
               ))}
             </div>

@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db/database';
+import { usePeople } from './usePeople';
 import { getDaysUntilDate, daysSince } from '../utils/date';
 
 interface DateReminder {
@@ -11,7 +10,7 @@ interface DateReminder {
 }
 
 export function useReminders(nudgeDays: number = 30) {
-  const allPeople = useLiveQuery(() => db.people.toArray(), [], []);
+  const allPeople = usePeople();
 
   const upcomingDates = useMemo(() => {
     const reminders: DateReminder[] = [];
