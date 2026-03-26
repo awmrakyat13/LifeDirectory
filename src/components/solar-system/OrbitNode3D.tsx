@@ -91,10 +91,10 @@ export function OrbitNode3D({ node, isCenter, isHovered, onHover, onClick }: Orb
         <meshBasicMaterial color={edgeColor} transparent opacity={0.015} side={THREE.BackSide} />
       </mesh>
 
-      {/* Category/center ring */}
-      <mesh rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[radius * 0.55, 0.04, 8, 48]} />
-        <meshBasicMaterial color={edgeColor} transparent opacity={isCenter ? 0.4 : 0.3} />
+      {/* Category/center ring — behind the avatar, not overlapping */}
+      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, -0.5]}>
+        <torusGeometry args={[radius * 0.55, 0.03, 8, 48]} />
+        <meshBasicMaterial color={edgeColor} transparent opacity={isCenter ? 0.3 : 0.15} />
       </mesh>
 
       {/* Avatar sprite */}
