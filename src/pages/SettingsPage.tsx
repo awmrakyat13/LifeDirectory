@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/database';
 import { useTheme } from '../hooks/useTheme';
 import { useInstallPrompt } from '../hooks/useInstallPrompt';
+import { useAuth } from '../hooks/useAuth';
 import { useAppSettings } from '../hooks/useAppSettings';
 import { exportData, importData, previewImport, exportCategory } from '../db/backup';
 import { compressImage } from '../utils/image';
@@ -13,6 +14,7 @@ import { useCategories } from '../hooks/useCategories';
 import styles from './SettingsPage.module.css';
 
 export function SettingsPage() {
+  const { user } = useAuth();
   const { theme, setTheme } = useTheme();
   const { canInstall, isInstalled, install } = useInstallPrompt();
   const { toast } = useToast();
@@ -70,16 +72,18 @@ export function SettingsPage() {
   }
 
   async function handleClearAll() {
-    await db.transaction('rw', [db.people, db.categories, db.personCategories, db.interactions, db.settings], async () => {
-      await db.people.clear();
-      await db.categories.clear();
-      await db.personCategories.clear();
-      await db.interactions.clear();
-      await db.settings.clear();
-    });
-    // Re-seed defaults
-    const { seedDatabase } = await import('../db/seed');
-    await seedDatabase();
+    if (!user) return;
+    // Clear all Firestore collections for this user
+    const { collection, getDocs, deleteDoc } = await import('firebase/firestore');
+    const { firestore } = await import('../firebase/config');
+    const collections = ['people', 'categories', 'personCategories', 'interactions'];
+    for (const col of collections) {
+      const snap = await getDocs(collection(firestore, 'users', user.uid, col));
+      for (const d of snap.docs) await deleteDoc(d.ref);
+    }
+    // Re-seed default categories
+    const { seedUserCategories } = await import('../firebase/seedUserData');
+    await seedUserCategories(user.uid);
     toast('All data cleared', 'info');
     setShowClearConfirm(false);
   }

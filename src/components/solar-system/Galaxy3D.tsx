@@ -1,7 +1,6 @@
 import { Suspense, useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Stars } from '@react-three/drei';
-import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import { OrbitNode3D } from './OrbitNode3D';
 import { OrbitRing3D } from './OrbitRing3D';
@@ -124,17 +123,6 @@ function Scene({ layout, hoveredNodeId, onHover, onClick }: Galaxy3DProps) {
         onHover={onHover}
         onClick={onClick}
       />
-
-      {/* Subtle post-processing */}
-      <EffectComposer>
-        <Bloom
-          luminanceThreshold={0.6}
-          luminanceSmoothing={0.9}
-          intensity={0.3}
-          mipmapBlur
-        />
-        <Vignette offset={0.3} darkness={0.4} />
-      </EffectComposer>
 
       <OrbitControls
         enablePan

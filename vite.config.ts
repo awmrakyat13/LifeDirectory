@@ -29,4 +29,17 @@ export default defineConfig({
       },
     }),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Split heavy dependencies into separate chunks
+          'firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore'],
+          'three': ['three'],
+          'r3f': ['@react-three/fiber', '@react-three/drei'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 600,
+  },
 });
