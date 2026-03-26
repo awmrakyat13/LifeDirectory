@@ -15,9 +15,10 @@ Personal CRM / people directory PWA.
 - `npm run preview` - Preview production build
 
 ## Deployment
-- GitHub Pages via GitHub Actions (push to main triggers deploy)
-- Live at: https://awmrakyat13.github.io/LifeDirectory/
-- Vite base path: /LifeDirectory/
+- Vercel (primary): https://life-directory.vercel.app/
+- GitHub Pages (legacy): https://awmrakyat13.github.io/LifeDirectory/
+- Vercel auto-deploys on push to main (GitHub integration connected)
+- Vite base path: /
 
 ## Architecture
 - All data is local (IndexedDB via Dexie). No backend.

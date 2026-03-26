@@ -100,3 +100,25 @@
   color: var(--color-text-secondary);
   line-height: 1.6;
 }
+
+.installBtn {
+  padding: var(--space-sm) var(--space-lg);
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--color-accent);
+  color: white;
+  font-weight: 600;
+  font-size: var(--font-size-base);
+}
+
+.installBtn:hover {
+  background: var(--color-accent-hover);
+}
+
+.installSteps {
+  margin-top: var(--space-sm);
+  padding-left: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}

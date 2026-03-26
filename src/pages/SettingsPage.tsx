@@ -2,12 +2,14 @@ import { useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/database';
 import { useTheme } from '../hooks/useTheme';
+import { useInstallPrompt } from '../hooks/useInstallPrompt';
 import { exportData, importData } from '../db/backup';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import styles from './SettingsPage.module.css';
 
 export function SettingsPage() {
   const { theme, setTheme } = useTheme();
+  const { canInstall, isInstalled, install } = useInstallPrompt();
   const settings = useLiveQuery(() => db.settings.get('singleton'));
   const nudgeDays = settings?.nudgeDays ?? 30;
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -103,6 +105,31 @@ export function SettingsPage() {
         </div>
         {importStatus && (
           <p className={styles.statusMsg}>{importStatus}</p>
+        )}
+      </section>
+
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Install App</h2>
+        {isInstalled ? (
+          <p className={styles.about}>Life Directory is installed on this device.</p>
+        ) : canInstall ? (
+          <div>
+            <p className={styles.about} style={{ marginBottom: 'var(--space-md)' }}>
+              Install Life Directory on your device for quick access and offline use.
+            </p>
+            <button className={styles.installBtn} onClick={install}>
+              Install App
+            </button>
+          </div>
+        ) : (
+          <div className={styles.about}>
+            <p>To install on your phone:</p>
+            <ol className={styles.installSteps}>
+              <li><strong>iPhone/iPad:</strong> Tap the Share button, then "Add to Home Screen"</li>
+              <li><strong>Android:</strong> Tap the menu (three dots), then "Add to Home Screen" or "Install App"</li>
+              <li><strong>Desktop:</strong> Look for the install icon in your browser's address bar</li>
+            </ol>
+          </div>
         )}
       </section>
 
