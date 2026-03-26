@@ -48,7 +48,8 @@ function userCollection(uid: string, name: string) {
 
 export async function createUserProfile(uid: string, profile: UserProfile) {
   await setDoc(userDoc(uid), { profile });
-  await setDoc(doc(firestore, 'users', uid, 'meta', 'public'), {
+  // Store public profile in top-level searchable collection
+  await setDoc(doc(firestore, 'publicProfiles', uid), {
     uid,
     email: profile.email,
     name: profile.name,
@@ -69,7 +70,7 @@ export async function updateUserProfile(uid: string, updates: Partial<UserProfil
   await setDoc(userDoc(uid), { profile: merged }, { merge: true });
   // Update public profile if name/photo changed
   if (updates.name || updates.photoUrl !== undefined) {
-    await setDoc(doc(firestore, 'users', uid, 'meta', 'public'), {
+    await setDoc(doc(firestore, 'publicProfiles', uid), {
       uid,
       email: merged.email,
       name: merged.name,
@@ -79,16 +80,10 @@ export async function updateUserProfile(uid: string, updates: Partial<UserProfil
 }
 
 export async function findUserByEmail(email: string): Promise<PublicProfile | null> {
-  // Search all users' public profiles
-  const usersSnap = await getDocs(collection(firestore, 'users'));
-  for (const userDoc of usersSnap.docs) {
-    const metaSnap = await getDoc(doc(firestore, 'users', userDoc.id, 'meta', 'public'));
-    if (metaSnap.exists()) {
-      const pub = metaSnap.data() as PublicProfile;
-      if (pub.email === email) return pub;
-    }
-  }
-  return null;
+  const q = query(collection(firestore, 'publicProfiles'), where('email', '==', email));
+  const snap = await getDocs(q);
+  if (snap.empty) return null;
+  return snap.docs[0].data() as PublicProfile;
 }
 
 // ---- People CRUD ----
