@@ -1,9 +1,13 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '../../db/database';
 import { Avatar } from '../ui/Avatar';
 import { CategoryPill } from '../categories/CategoryPill';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
+import { useToast } from '../ui/Toast';
 import { usePersonActions } from '../../hooks/usePeople';
+import { formatDate } from '../../utils/date';
 import type { Person, Category } from '../../models/types';
 import styles from './PersonDetail.module.css';
 
@@ -12,26 +16,48 @@ interface PersonDetailProps {
   categories: Category[];
 }
 
-function formatDate(dateStr?: string): string {
-  if (!dateStr) return '';
-  return new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-}
-
 export function PersonDetail({ person, categories }: PersonDetailProps) {
   const navigate = useNavigate();
   const { deletePerson, toggleFavorite } = usePersonActions();
+  const { toast } = useToast();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+  // Fetch linked people
+  const linkedPeople = useLiveQuery(async () => {
+    if (!person.linkedPersonIds || person.linkedPersonIds.length === 0) return [];
+    return db.people.where('id').anyOf(person.linkedPersonIds).toArray();
+  }, [person.linkedPersonIds], []);
+
+  // Interaction stats
+  const interactionStats = useLiveQuery(async () => {
+    const interactions = await db.interactions.where('personId').equals(person.id).toArray();
+    if (interactions.length === 0) return null;
+    const sorted = interactions.sort((a, b) => a.date.localeCompare(b.date));
+    const totalCount = interactions.length;
+    const firstDate = sorted[0].date;
+    const lastDate = sorted[sorted.length - 1].date;
+    const daySpan = Math.max(1, Math.floor((new Date(lastDate).getTime() - new Date(firstDate).getTime()) / (1000 * 60 * 60 * 24)));
+    const avgDaysBetween = totalCount > 1 ? Math.round(daySpan / (totalCount - 1)) : null;
+    const typeCounts: Record<string, number> = {};
+    for (const i of interactions) {
+      typeCounts[i.type] = (typeCounts[i.type] || 0) + 1;
+    }
+    const mostCommonType = Object.entries(typeCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
+    return { totalCount, avgDaysBetween, mostCommonType };
+  }, [person.id]);
+
   async function handleDelete() {
+    const name = `${person.firstName} ${person.lastName}`;
     await deletePerson(person.id);
+    toast(`${name} deleted`, 'info');
     navigate('/people');
   }
 
-  const hasIdentityExtras = person.relationshipLabel || person.howWeMet;
+  async function handleToggleFavorite() {
+    await toggleFavorite(person.id);
+    toast(person.isFavorite ? 'Removed from favorites' : 'Added to favorites', 'success');
+  }
+
   const hasDates = person.birthday || person.anniversary || (person.customDates && person.customDates.length > 0);
   const hasFamily = person.spousePartner || (person.children && person.children.length > 0) || (person.pets && person.pets.length > 0);
   const hasWork = person.occupation || person.company || (person.interests && person.interests.length > 0) || (person.dietaryRestrictions && person.dietaryRestrictions.length > 0) || (person.languages && person.languages.length > 0);
@@ -62,7 +88,8 @@ export function PersonDetail({ person, categories }: PersonDetailProps) {
         </div>
         <button
           className={`${styles.favBtn} ${person.isFavorite ? styles.favActive : ''}`}
-          onClick={() => toggleFavorite(person.id)}
+          onClick={handleToggleFavorite}
+          aria-label={person.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
         >
           {person.isFavorite ? '\u2605' : '\u2606'}
         </button>
@@ -73,15 +100,13 @@ export function PersonDetail({ person, categories }: PersonDetailProps) {
         <button className={styles.deleteBtn} onClick={() => setShowDeleteConfirm(true)}>Delete</button>
       </div>
 
-      {hasIdentityExtras && (
+      {person.howWeMet && (
         <div className={styles.section}>
           <h3 className={styles.sectionTitle}>About</h3>
-          {person.howWeMet && (
-            <div className={styles.field}>
-              <div className={styles.fieldLabel}>How We Met</div>
-              <div className={styles.howWeMet}>{person.howWeMet}</div>
-            </div>
-          )}
+          <div className={styles.field}>
+            <div className={styles.fieldLabel}>How We Met</div>
+            <div className={styles.howWeMet}>{person.howWeMet}</div>
+          </div>
         </div>
       )}
 
@@ -138,6 +163,20 @@ export function PersonDetail({ person, categories }: PersonDetailProps) {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {linkedPeople.length > 0 && (
+        <div className={styles.section}>
+          <h3 className={styles.sectionTitle}>Linked People</h3>
+          <div className={styles.linkedPeople}>
+            {linkedPeople.map((lp) => (
+              <Link key={lp.id} to={`/people/${lp.id}`} className={styles.linkedPerson}>
+                <Avatar firstName={lp.firstName} lastName={lp.lastName} photoBlob={lp.photoBlob} size={32} />
+                <span>{lp.firstName} {lp.lastName}</span>
+              </Link>
+            ))}
+          </div>
         </div>
       )}
 
@@ -248,6 +287,30 @@ export function PersonDetail({ person, categories }: PersonDetailProps) {
               <div className={styles.fieldValue} style={{ whiteSpace: 'pre-line' }}>{person.notes}</div>
             </div>
           )}
+        </div>
+      )}
+
+      {interactionStats && (
+        <div className={styles.section}>
+          <h3 className={styles.sectionTitle}>Interaction Stats</h3>
+          <div className={styles.statsRow}>
+            <div className={styles.stat}>
+              <div className={styles.statValue}>{interactionStats.totalCount}</div>
+              <div className={styles.statLabel}>Total</div>
+            </div>
+            {interactionStats.avgDaysBetween !== null && (
+              <div className={styles.stat}>
+                <div className={styles.statValue}>{interactionStats.avgDaysBetween}d</div>
+                <div className={styles.statLabel}>Avg. gap</div>
+              </div>
+            )}
+            {interactionStats.mostCommonType && (
+              <div className={styles.stat}>
+                <div className={styles.statValue}>{interactionStats.mostCommonType}</div>
+                <div className={styles.statLabel}>Most common</div>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

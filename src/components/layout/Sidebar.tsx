@@ -1,20 +1,13 @@
 import { NavLink } from 'react-router-dom';
+import { NAV_ITEMS } from '../../constants/navigation';
 import styles from './Sidebar.module.css';
-
-const navItems = [
-  { to: '/', icon: '\u2302', label: 'Home' },
-  { to: '/people', icon: '\u{1F465}', label: 'People' },
-  { to: '/categories', icon: '\u2630', label: 'Categories' },
-  { to: '/reminders', icon: '\u{1F514}', label: 'Reminders' },
-  { to: '/settings', icon: '\u2699', label: 'Settings' },
-];
 
 export function Sidebar() {
   return (
     <aside className={styles.sidebar}>
       <div className={styles.logo}>Life Directory</div>
       <nav className={styles.nav}>
-        {navItems.map((item) => (
+        {NAV_ITEMS.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}

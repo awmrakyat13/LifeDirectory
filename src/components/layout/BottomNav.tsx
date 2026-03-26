@@ -1,17 +1,11 @@
 import { NavLink } from 'react-router-dom';
+import { BOTTOM_NAV_ITEMS } from '../../constants/navigation';
 import styles from './BottomNav.module.css';
-
-const navItems = [
-  { to: '/', icon: '\u2302', label: 'Home' },
-  { to: '/people', icon: '\u{1F465}', label: 'People' },
-  { to: '/reminders', icon: '\u{1F514}', label: 'Reminders' },
-  { to: '/settings', icon: '\u2699', label: 'Settings' },
-];
 
 export function BottomNav() {
   return (
     <nav className={styles.bottomNav}>
-      {navItems.map((item) => (
+      {BOTTOM_NAV_ITEMS.map((item) => (
         <NavLink
           key={item.to}
           to={item.to}

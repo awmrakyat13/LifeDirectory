@@ -1,36 +1,55 @@
 import { useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/database';
+import { getDaysUntilDate, daysSince } from '../utils/date';
 
-function getDaysUntilBirthday(birthday: string): number {
-  const today = new Date();
-  const bday = new Date(birthday + 'T00:00:00');
-  const nextBirthday = new Date(today.getFullYear(), bday.getMonth(), bday.getDate());
-  if (nextBirthday < today) {
-    nextBirthday.setFullYear(today.getFullYear() + 1);
-  }
-  const diff = nextBirthday.getTime() - today.getTime();
-  return Math.ceil(diff / (1000 * 60 * 60 * 24));
-}
-
-function daysSince(dateStr: string): number {
-  const date = new Date(dateStr + 'T00:00:00');
-  const today = new Date();
-  const diff = today.getTime() - date.getTime();
-  return Math.floor(diff / (1000 * 60 * 60 * 24));
+interface DateReminder {
+  person: { id: string; firstName: string; lastName: string; photoBlob?: Blob };
+  label: string;
+  dateStr: string;
+  daysUntil: number;
 }
 
 export function useReminders(nudgeDays: number = 30) {
   const allPeople = useLiveQuery(() => db.people.toArray(), [], []);
 
-  const upcomingBirthdays = useMemo(() => {
-    const withBirthdays = allPeople.filter((p) => !!p.birthday);
-    return withBirthdays
-      .map((p) => ({
-        person: p,
-        daysUntil: getDaysUntilBirthday(p.birthday!),
-      }))
-      .sort((a, b) => a.daysUntil - b.daysUntil);
+  const upcomingDates = useMemo(() => {
+    const reminders: DateReminder[] = [];
+
+    for (const p of allPeople) {
+      const personRef = { id: p.id, firstName: p.firstName, lastName: p.lastName, photoBlob: p.photoBlob };
+
+      if (p.birthday) {
+        reminders.push({
+          person: personRef,
+          label: 'Birthday',
+          dateStr: p.birthday,
+          daysUntil: getDaysUntilDate(p.birthday),
+        });
+      }
+      if (p.anniversary) {
+        reminders.push({
+          person: personRef,
+          label: 'Anniversary',
+          dateStr: p.anniversary,
+          daysUntil: getDaysUntilDate(p.anniversary),
+        });
+      }
+      if (p.customDates) {
+        for (const cd of p.customDates) {
+          if (cd.date) {
+            reminders.push({
+              person: personRef,
+              label: cd.label || 'Custom date',
+              dateStr: cd.date,
+              daysUntil: getDaysUntilDate(cd.date),
+            });
+          }
+        }
+      }
+    }
+
+    return reminders.sort((a, b) => a.daysUntil - b.daysUntil);
   }, [allPeople]);
 
   const nudges = useMemo(() => {
@@ -52,5 +71,5 @@ export function useReminders(nudgeDays: number = 30) {
       });
   }, [allPeople, nudgeDays]);
 
-  return { upcomingBirthdays, nudges };
+  return { upcomingDates, nudges };
 }

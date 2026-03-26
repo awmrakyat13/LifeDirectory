@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/database';
 import { useReminders } from '../hooks/useReminders';
 import { Avatar } from '../components/ui/Avatar';
+import { daysUntilLabel, formatMonthDay } from '../utils/date';
 import styles from './HomePage.module.css';
 
 export function HomePage() {
@@ -21,8 +22,8 @@ export function HomePage() {
   );
 
   const nudgeDays = settings?.nudgeDays ?? 30;
-  const { upcomingBirthdays, nudges } = useReminders(nudgeDays);
-  const soonBirthdays = upcomingBirthdays.filter((b) => b.daysUntil <= 30).slice(0, 5);
+  const { upcomingDates, nudges } = useReminders(nudgeDays);
+  const soonDates = upcomingDates.filter((d) => d.daysUntil <= 30).slice(0, 5);
 
   return (
     <div className={styles.container}>
@@ -43,19 +44,19 @@ export function HomePage() {
         </Link>
       </div>
 
-      {soonBirthdays.length > 0 && (
+      {soonDates.length > 0 && (
         <section className={styles.section}>
           <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>Upcoming Birthdays</h2>
+            <h2 className={styles.sectionTitle}>Upcoming Dates</h2>
             <Link to="/reminders" className={styles.seeAll}>See all</Link>
           </div>
           <div className={styles.list}>
-            {soonBirthdays.map(({ person, daysUntil }) => (
-              <Link key={person.id} to={`/people/${person.id}`} className={styles.listItem}>
-                <Avatar firstName={person.firstName} lastName={person.lastName} photoBlob={person.photoBlob} size={32} />
-                <span className={styles.listName}>{person.firstName} {person.lastName}</span>
+            {soonDates.map((item, i) => (
+              <Link key={`${item.person.id}-${i}`} to={`/people/${item.person.id}`} className={styles.listItem}>
+                <Avatar firstName={item.person.firstName} lastName={item.person.lastName} photoBlob={item.person.photoBlob} size={32} />
+                <span className={styles.listName}>{item.person.firstName} {item.person.lastName}</span>
                 <span className={styles.listMeta}>
-                  {daysUntil === 0 ? 'Today!' : daysUntil === 1 ? 'Tomorrow' : `in ${daysUntil}d`}
+                  {item.label} &middot; {formatMonthDay(item.dateStr)} &middot; {daysUntilLabel(item.daysUntil)}
                 </span>
               </Link>
             ))}

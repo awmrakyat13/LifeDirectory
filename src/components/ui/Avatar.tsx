@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import styles from './Avatar.module.css';
 
 interface AvatarProps {
@@ -22,10 +22,17 @@ function getColorForName(name: string): string {
 }
 
 export function Avatar({ photoBlob, firstName, lastName, size = 40 }: AvatarProps) {
-  const imageUrl = useMemo(
-    () => (photoBlob ? URL.createObjectURL(photoBlob) : null),
-    [photoBlob]
-  );
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (photoBlob) {
+      const url = URL.createObjectURL(photoBlob);
+      setImageUrl(url);
+      return () => URL.revokeObjectURL(url);
+    } else {
+      setImageUrl(null);
+    }
+  }, [photoBlob]);
 
   const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   const bgColor = getColorForName(`${firstName}${lastName}`);

@@ -3,28 +3,38 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/database';
 import { useTheme } from '../hooks/useTheme';
 import { useInstallPrompt } from '../hooks/useInstallPrompt';
-import { exportData, importData } from '../db/backup';
+import { exportData, importData, previewImport, exportCategory } from '../db/backup';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
+import { useToast } from '../components/ui/Toast';
+import { useCategories } from '../hooks/useCategories';
 import styles from './SettingsPage.module.css';
 
 export function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const { canInstall, isInstalled, install } = useInstallPrompt();
+  const { toast } = useToast();
+  const { categories } = useCategories();
   const settings = useLiveQuery(() => db.settings.get('singleton'));
   const nudgeDays = settings?.nudgeDays ?? 30;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showImportConfirm, setShowImportConfirm] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
-  const [importStatus, setImportStatus] = useState('');
+  const [importPreview, setImportPreview] = useState<{ people: number; categories: number; interactions: number } | null>(null);
 
   async function handleNudgeDaysChange(value: number) {
     await db.settings.update('singleton', { nudgeDays: value });
   }
 
-  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (file) {
       setImportFile(file);
+      try {
+        const preview = await previewImport(file);
+        setImportPreview(preview);
+      } catch {
+        setImportPreview(null);
+      }
       setShowImportConfirm(true);
     }
     e.target.value = '';
@@ -34,13 +44,23 @@ export function SettingsPage() {
     if (!importFile) return;
     try {
       await importData(importFile);
-      setImportStatus('Data imported successfully!');
+      toast('Data imported successfully', 'success');
     } catch {
-      setImportStatus('Failed to import data. Invalid file format.');
+      toast('Failed to import data. Invalid file format.', 'error');
     }
     setShowImportConfirm(false);
     setImportFile(null);
-    setTimeout(() => setImportStatus(''), 3000);
+    setImportPreview(null);
+  }
+
+  async function handleExport() {
+    await exportData();
+    toast('Backup exported', 'success');
+  }
+
+  async function handleExportCategory(categoryId: string, categoryName: string) {
+    await exportCategory(categoryId);
+    toast(`Exported "${categoryName}" people`, 'success');
   }
 
   return (
@@ -89,8 +109,8 @@ export function SettingsPage() {
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Data</h2>
         <div className={styles.dataActions}>
-          <button className={styles.dataBtn} onClick={exportData}>
-            Export Backup (JSON)
+          <button className={styles.dataBtn} onClick={handleExport}>
+            Export All (JSON)
           </button>
           <button className={styles.dataBtn} onClick={() => fileInputRef.current?.click()}>
             Import Backup
@@ -103,8 +123,22 @@ export function SettingsPage() {
             style={{ display: 'none' }}
           />
         </div>
-        {importStatus && (
-          <p className={styles.statusMsg}>{importStatus}</p>
+        {categories.length > 0 && (
+          <div style={{ marginTop: 'var(--space-md)' }}>
+            <label className={styles.label}>Export by category</label>
+            <div className={styles.dataActions}>
+              {categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  className={styles.dataBtn}
+                  onClick={() => handleExportCategory(cat.id, cat.name)}
+                  style={{ borderColor: cat.color, color: cat.color }}
+                >
+                  {cat.name}
+                </button>
+              ))}
+            </div>
+          </div>
         )}
       </section>
 
@@ -145,11 +179,15 @@ export function SettingsPage() {
       {showImportConfirm && (
         <ConfirmDialog
           title="Import Data"
-          message="This will replace ALL existing data with the imported backup. This cannot be undone. Are you sure?"
+          message={
+            importPreview
+              ? `This backup contains ${importPreview.people} people, ${importPreview.categories} categories, and ${importPreview.interactions} interactions. Importing will replace ALL existing data. This cannot be undone.`
+              : 'This will replace ALL existing data with the imported backup. This cannot be undone. Are you sure?'
+          }
           confirmLabel="Import"
           danger
           onConfirm={handleImport}
-          onCancel={() => { setShowImportConfirm(false); setImportFile(null); }}
+          onCancel={() => { setShowImportConfirm(false); setImportFile(null); setImportPreview(null); }}
         />
       )}
     </div>

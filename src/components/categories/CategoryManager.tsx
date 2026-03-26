@@ -1,22 +1,21 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useCategories } from '../../hooks/useCategories';
+import { PRESET_COLORS } from '../../constants/colors';
+import { useToast } from '../ui/Toast';
 import { Modal } from '../ui/Modal';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import styles from './CategoryManager.module.css';
 
-const PRESET_COLORS = [
-  '#E74C3C', '#3498DB', '#2ECC71', '#F39C12', '#9B59B6',
-  '#1ABC9C', '#E67E22', '#34495E', '#E91E63', '#00BCD4',
-  '#8BC34A', '#FF5722',
-];
-
 export function CategoryManager() {
-  const { categories, addCategory, updateCategory, deleteCategory } = useCategories();
+  const { categories, addCategory, updateCategory, deleteCategory, reorderCategories } = useCategories();
+  const { toast } = useToast();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState('');
-  const [color, setColor] = useState(PRESET_COLORS[0]);
+  const [color, setColor] = useState<string>(PRESET_COLORS[0]);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const dragItem = useRef<number | null>(null);
+  const dragOverItem = useRef<number | null>(null);
 
   function openAddForm() {
     setEditingId(null);
@@ -38,8 +37,10 @@ export function CategoryManager() {
 
     if (editingId) {
       await updateCategory(editingId, { name: trimmed, color });
+      toast('Category updated', 'success');
     } else {
       await addCategory(trimmed, color);
+      toast(`"${trimmed}" added`, 'success');
     }
     setShowForm(false);
   }
@@ -47,8 +48,22 @@ export function CategoryManager() {
   async function handleDelete() {
     if (deleteTarget) {
       await deleteCategory(deleteTarget.id);
+      toast(`"${deleteTarget.name}" deleted`, 'info');
       setDeleteTarget(null);
     }
+  }
+
+  async function handleDragEnd() {
+    if (dragItem.current === null || dragOverItem.current === null) return;
+    if (dragItem.current === dragOverItem.current) return;
+
+    const reordered = [...categories];
+    const [removed] = reordered.splice(dragItem.current, 1);
+    reordered.splice(dragOverItem.current, 0, removed);
+    await reorderCategories(reordered.map((c) => c.id));
+
+    dragItem.current = null;
+    dragOverItem.current = null;
   }
 
   return (
@@ -64,9 +79,17 @@ export function CategoryManager() {
         <p className={styles.empty}>No categories yet. Add one to get started.</p>
       ) : (
         <div className={styles.list}>
-          {categories.map((cat) => (
-            <div key={cat.id} className={styles.item}>
-              <span className={styles.dragHandle}>::</span>
+          {categories.map((cat, index) => (
+            <div
+              key={cat.id}
+              className={styles.item}
+              draggable
+              onDragStart={() => { dragItem.current = index; }}
+              onDragEnter={() => { dragOverItem.current = index; }}
+              onDragOver={(e) => e.preventDefault()}
+              onDragEnd={handleDragEnd}
+            >
+              <span className={styles.dragHandle} title="Drag to reorder">{'\u2630'}</span>
               <span className={styles.colorDot} style={{ background: cat.color }} />
               <span className={styles.name}>{cat.name}</span>
               <div className={styles.actions}>
