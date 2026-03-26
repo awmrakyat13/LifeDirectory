@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { createAvatarTexture, createPhotoTexture } from './avatarTexture';
+import { getRingTilt } from './OrbitRing3D';
 import type { OrbitNode as OrbitNodeType } from '../../utils/orbitCalculator';
 
 interface OrbitNode3DProps {
@@ -57,7 +58,7 @@ export function OrbitNode3D({ node, isCenter, isHovered, onHover, onClick }: Orb
   useFrame((state) => {
     const t = state.clock.elapsedTime;
     if (groupRef.current) {
-      groupRef.current.position.z = Math.sin(t * 0.25 + node.angle * 3) * 0.2;
+      groupRef.current.position.z = pos[2] + Math.sin(t * 0.25 + node.angle * 3) * 0.2;
       const target = isHovered && !isCenter ? 1.12 : 1;
       const s = groupRef.current.scale.x;
       groupRef.current.scale.setScalar(s + (target - s) * 0.08);
@@ -70,9 +71,17 @@ export function OrbitNode3D({ node, isCenter, isHovered, onHover, onClick }: Orb
     }
   });
 
-  if (!texture) return null;
+  // Apply ring tilt to node position so nodes sit on their tilted ring
+  const pos: [number, number, number] = useMemo(() => {
+    const flatPos = new THREE.Vector3(node.x * 0.1, node.y * 0.1, 0);
+    if (isCenter || node.ring === 0) return [flatPos.x, flatPos.y, flatPos.z];
+    const tilt = getRingTilt(node.ring);
+    const euler = new THREE.Euler(tilt[0], tilt[1], tilt[2]);
+    flatPos.applyEuler(euler);
+    return [flatPos.x, flatPos.y, flatPos.z];
+  }, [node.x, node.y, node.ring, isCenter]);
 
-  const pos: [number, number, number] = [node.x * 0.1, node.y * 0.1, 0];
+  if (!texture) return null;
 
   return (
     <group ref={groupRef} position={pos}>

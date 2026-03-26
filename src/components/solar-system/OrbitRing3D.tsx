@@ -7,11 +7,32 @@ interface OrbitRing3DProps {
   ring: OrbitRing;
 }
 
+// Each ring gets a unique tilt based on its index
+export function getRingTilt(ringNum: number): [number, number, number] {
+  const tilts: [number, number, number][] = [
+    [0, 0, 0],                          // ring 0 (center, unused)
+    [0.15, 0.1, 0],                     // ring 1 — slight forward tilt
+    [-0.1, 0, 0.12],                    // ring 2 — slight back + roll
+    [0.08, -0.15, -0.08],              // ring 3
+    [-0.12, 0.08, 0.15],              // ring 4
+    [0.18, -0.1, -0.05],              // ring 5
+    [-0.05, 0.18, 0.1],               // ring 6
+    [0.1, -0.05, -0.18],              // ring 7
+    [-0.15, 0.12, 0.05],              // ring 8
+  ];
+  return tilts[ringNum] || [
+    Math.sin(ringNum * 1.7) * 0.15,
+    Math.cos(ringNum * 2.3) * 0.15,
+    Math.sin(ringNum * 3.1) * 0.1,
+  ];
+}
+
 export function OrbitRing3D({ ring }: OrbitRing3DProps) {
   const arcGroupRef = useRef<THREE.Group>(null);
   const radius = ring.radius * 0.1;
   const tubeRadius = 0.03;
   const segments = 128;
+  const tilt = getRingTilt(ring.ring);
 
   useFrame(() => {
     if (arcGroupRef.current) {
@@ -19,10 +40,8 @@ export function OrbitRing3D({ ring }: OrbitRing3DProps) {
     }
   });
 
-  // Full orbit ring as a thin torus
   const ringColor = useMemo(() => new THREE.Color(ring.color), [ring.color]);
 
-  // Accent arc curve (15% of the circle)
   const arcCurve = useMemo(() => {
     const pts: THREE.Vector3[] = [];
     const arcLen = Math.floor(segments * 0.15);
@@ -33,7 +52,6 @@ export function OrbitRing3D({ ring }: OrbitRing3DProps) {
     return new THREE.CatmullRomCurve3(pts);
   }, [radius]);
 
-  // Secondary smaller arc on opposite side
   const arc2Curve = useMemo(() => {
     const pts: THREE.Vector3[] = [];
     const arcLen = Math.floor(segments * 0.07);
@@ -45,14 +63,14 @@ export function OrbitRing3D({ ring }: OrbitRing3DProps) {
   }, [radius]);
 
   return (
-    <>
-      {/* Full orbit path — thin glowing torus */}
+    <group rotation={tilt}>
+      {/* Full orbit path */}
       <mesh>
         <torusGeometry args={[radius, tubeRadius, 6, segments]} />
         <meshBasicMaterial color={ringColor} transparent opacity={0.12} />
       </mesh>
 
-      {/* Rotating accent arcs — thicker tubes */}
+      {/* Rotating accent arcs */}
       <group ref={arcGroupRef}>
         <mesh>
           <tubeGeometry args={[arcCurve, 32, tubeRadius * 3, 8, false]} />
@@ -63,6 +81,6 @@ export function OrbitRing3D({ ring }: OrbitRing3DProps) {
           <meshBasicMaterial color={ringColor} transparent opacity={0.25} />
         </mesh>
       </group>
-    </>
+    </group>
   );
 }
