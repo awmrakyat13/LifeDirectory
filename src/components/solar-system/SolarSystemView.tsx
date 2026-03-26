@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { usePeople } from '../../hooks/usePeople';
@@ -11,7 +11,7 @@ import { usePersonActions } from '../../hooks/usePeople';
 import { useToast } from '../ui/Toast';
 import { Modal } from '../ui/Modal';
 import type { PersonCategory } from '../../models/types';
-import { Galaxy3D } from './Galaxy3D';
+import { Galaxy3D, type Galaxy3DRef } from './Galaxy3D';
 import { Breadcrumbs } from './Breadcrumbs';
 import { ProfileSetupModal } from './ProfileSetupModal';
 import styles from './SolarSystemView.module.css';
@@ -19,6 +19,7 @@ import styles from './SolarSystemView.module.css';
 export function SolarSystemView() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const galaxyRef = useRef<Galaxy3DRef | null>(null);
 
   // Data from Firestore hooks
   const people = usePeople();
@@ -150,7 +151,31 @@ export function SolarSystemView() {
         hoveredNodeId={hoveredNodeId}
         onHover={setHoveredNodeId}
         onClick={handleNodeClick}
+        onReady={(ref) => { galaxyRef.current = ref; }}
       />
+
+      {/* Ring jump panel */}
+      {layout.rings.length > 0 && (
+        <div className={styles.ringPanel}>
+          <button
+            className={styles.ringBtn}
+            onClick={() => galaxyRef.current?.resetCamera()}
+            style={{ borderColor: '#F39C12', color: '#F39C12' }}
+          >
+            Center
+          </button>
+          {layout.rings.map((ring) => (
+            <button
+              key={ring.ring}
+              className={styles.ringBtn}
+              onClick={() => galaxyRef.current?.jumpToRing(ring.radius)}
+              style={{ borderColor: ring.color, color: ring.color }}
+            >
+              {ring.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {people.length === 0 && !needsSetup && (
         <div className={styles.emptyHint}>

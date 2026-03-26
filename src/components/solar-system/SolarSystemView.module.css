@@ -17,3 +17,44 @@
   pointer-events: none;
   z-index: 10;
 }
+
+.ringPanel {
+  position: absolute;
+  top: var(--space-md);
+  right: var(--space-md);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.ringBtn {
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid;
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  font-size: 0.7rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.ringBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+@media (max-width: 600px) {
+  .ringPanel {
+    top: auto;
+    bottom: calc(var(--bottomnav-height) + var(--space-md) + 60px);
+    right: var(--space-sm);
+  }
+
+  .ringBtn {
+    font-size: 0.65rem;
+    padding: 3px var(--space-xs);
+  }
+}

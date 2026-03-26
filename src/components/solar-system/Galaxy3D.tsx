@@ -1,17 +1,24 @@
-import { Suspense, useRef } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Suspense, useRef, useEffect } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Stars } from '@react-three/drei';
+import type { OrbitControls as OrbitControlsType } from 'three-stdlib';
 import * as THREE from 'three';
 import { OrbitNode3D } from './OrbitNode3D';
 import { OrbitRing3D } from './OrbitRing3D';
 import { ConnectionLine3D } from './ConnectionLine3D';
 import type { OrbitLayout } from '../../utils/orbitCalculator';
 
+export interface Galaxy3DRef {
+  jumpToRing: (radius: number) => void;
+  resetCamera: () => void;
+}
+
 interface Galaxy3DProps {
   layout: OrbitLayout;
   hoveredNodeId: string | null;
   onHover: (id: string | null) => void;
   onClick: (id: string) => void;
+  onReady?: (ref: Galaxy3DRef) => void;
 }
 
 function DustField() {
@@ -52,7 +59,62 @@ function DustField() {
   );
 }
 
-function Scene({ layout, hoveredNodeId, onHover, onClick }: Galaxy3DProps) {
+function CameraController({ onReady }: { onReady?: (ref: Galaxy3DRef) => void }) {
+  const { camera } = useThree();
+  const controlsRef = useRef<OrbitControlsType>(null);
+
+  useEffect(() => {
+    if (onReady) {
+      onReady({
+        jumpToRing: (radius: number) => {
+          const scaledR = radius * 0.1;
+          const dist = scaledR + 20;
+          // Smoothly move camera target to origin and position above the ring
+          if (controlsRef.current) {
+            controlsRef.current.target.set(0, 0, 0);
+          }
+          camera.position.set(0, -dist * 0.4, dist * 0.8);
+          camera.lookAt(0, 0, 0);
+        },
+        resetCamera: () => {
+          camera.position.set(0, -20, 40);
+          if (controlsRef.current) {
+            controlsRef.current.target.set(0, 0, 0);
+          }
+        },
+      });
+    }
+  }, [onReady, camera]);
+
+  return (
+    <OrbitControls
+      ref={controlsRef}
+      enablePan
+      enableZoom
+      enableRotate
+      minDistance={12}
+      maxDistance={120}
+      maxPolarAngle={Math.PI * 0.72}
+      minPolarAngle={Math.PI * 0.28}
+      zoomSpeed={0.6}
+      panSpeed={0.8}
+      rotateSpeed={0.35}
+      enableDamping
+      dampingFactor={0.04}
+      mouseButtons={{
+        LEFT: THREE.MOUSE.PAN,
+        MIDDLE: THREE.MOUSE.DOLLY,
+        RIGHT: THREE.MOUSE.ROTATE,
+      }}
+      touches={{
+        ONE: THREE.TOUCH.PAN,
+        TWO: THREE.TOUCH.DOLLY_ROTATE,
+      }}
+    />
+  );
+}
+
+function Scene({ layout, hoveredNodeId, onHover, onClick, onReady }: Galaxy3DProps) {
   const nodePositions = new Map<string, { x: number; y: number }>();
   nodePositions.set(layout.center.id, { x: layout.center.x, y: layout.center.y });
   for (const n of layout.nodes) {
@@ -126,34 +188,12 @@ function Scene({ layout, hoveredNodeId, onHover, onClick }: Galaxy3DProps) {
         onClick={onClick}
       />
 
-      <OrbitControls
-        enablePan
-        enableZoom
-        enableRotate
-        minDistance={12}
-        maxDistance={120}
-        maxPolarAngle={Math.PI * 0.72}
-        minPolarAngle={Math.PI * 0.28}
-        zoomSpeed={0.6}
-        panSpeed={0.8}
-        rotateSpeed={0.35}
-        enableDamping
-        dampingFactor={0.04}
-        mouseButtons={{
-          LEFT: THREE.MOUSE.PAN,
-          MIDDLE: THREE.MOUSE.DOLLY,
-          RIGHT: THREE.MOUSE.ROTATE,
-        }}
-        touches={{
-          ONE: THREE.TOUCH.PAN,
-          TWO: THREE.TOUCH.DOLLY_ROTATE,
-        }}
-      />
+      <CameraController onReady={onReady} />
     </>
   );
 }
 
-export function Galaxy3D(props: Galaxy3DProps) {
+export function Galaxy3D(props: Galaxy3DProps & { onReady?: (ref: Galaxy3DRef) => void }) {
   return (
     <Canvas
       camera={{ position: [0, -20, 40], fov: 55, near: 0.1, far: 500 }}

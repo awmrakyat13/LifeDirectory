@@ -1,5 +1,5 @@
 import type { Person, Category, PersonCategory } from '../models/types';
-import { SOLAR } from '../constants/solarSystem';
+import { SOLAR, getRingRadius } from '../constants/solarSystem';
 import { daysSince } from './date';
 
 export interface OrbitNode {
@@ -201,7 +201,7 @@ function computeMeCenter(input: OrbitInput): OrbitLayout {
 
     if (catPeople.length === 0) continue;
 
-    const radius = SOLAR.BASE_RADIUS + (ringNum - 1) * SOLAR.RING_SPACING;
+    const radius = getRingRadius(ringNum);
     rings.push({ ring: ringNum, radius, label: cat.name, color: cat.color });
     catPeople.forEach((p, i) => {
       const pos = positionOnRing(i, catPeople.length, radius);
@@ -214,7 +214,7 @@ function computeMeCenter(input: OrbitInput): OrbitLayout {
   // Final ring: Uncategorized
   const uncategorized = people.filter((p) => !placed.has(p.id)).sort(interactionSort);
   if (uncategorized.length > 0) {
-    const radius = SOLAR.BASE_RADIUS + (ringNum - 1) * SOLAR.RING_SPACING;
+    const radius = getRingRadius(ringNum);
     rings.push({ ring: ringNum, radius, label: 'Other', color: '#888888' });
     uncategorized.forEach((p, i) => {
       const pos = positionOnRing(i, uncategorized.length, radius);
@@ -326,7 +326,7 @@ function computeDrillDown(input: OrbitInput): OrbitLayout {
 
     if (catPeople.length === 0) continue;
 
-    const radius = SOLAR.BASE_RADIUS + (ringNum - 1) * SOLAR.RING_SPACING;
+    const radius = getRingRadius(ringNum);
     rings.push({ ring: ringNum, radius, label: cat.name, color: cat.color });
     catPeople.forEach((p, i) => {
       const pos = positionOnRing(i, catPeople.length, radius);
@@ -343,7 +343,7 @@ function computeDrillDown(input: OrbitInput): OrbitLayout {
       .filter((p) => !placed.has(p.id) && p.company?.toLowerCase().trim() === companyKey)
       .sort(interactionSort);
     if (colleagues.length > 0) {
-      const radius = SOLAR.BASE_RADIUS + (ringNum - 1) * SOLAR.RING_SPACING;
+      const radius = getRingRadius(ringNum);
       rings.push({ ring: ringNum, radius, label: centerPerson.company, color: '#2ECC71' });
       colleagues.forEach((p, i) => {
         const pos = positionOnRing(i, colleagues.length, radius);
