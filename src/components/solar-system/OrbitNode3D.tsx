@@ -85,16 +85,10 @@ export function OrbitNode3D({ node, isCenter, isHovered, onHover, onClick }: Orb
 
   return (
     <group ref={groupRef} position={pos}>
-      {/* Soft glow sphere behind avatar */}
+      {/* Category-colored glow aura — no torus ring */}
       <mesh ref={glowRef}>
-        <sphereGeometry args={[radius * 1.15, 24, 24]} />
-        <meshBasicMaterial color={edgeColor} transparent opacity={0.015} side={THREE.BackSide} />
-      </mesh>
-
-      {/* Category/center ring — behind the avatar, not overlapping */}
-      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, -0.5]}>
-        <torusGeometry args={[radius * 0.55, 0.03, 8, 48]} />
-        <meshBasicMaterial color={edgeColor} transparent opacity={isCenter ? 0.3 : 0.15} />
+        <sphereGeometry args={[radius * 0.6, 24, 24]} />
+        <meshBasicMaterial color={edgeColor} transparent opacity={0.06} side={THREE.BackSide} />
       </mesh>
 
       {/* Avatar sprite */}

@@ -42,15 +42,24 @@ export function createAvatarTexture(
   ctx.fillStyle = shadow;
   ctx.fill();
 
-  // Initials with slight shadow
+  // Initials with dark outline for contrast on any background
   const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
-  ctx.shadowColor = 'rgba(0,0,0,0.3)';
-  ctx.shadowBlur = size * 0.04;
-  ctx.shadowOffsetY = size * 0.02;
-  ctx.fillStyle = 'white';
-  ctx.font = `600 ${size * 0.38}px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+  const fontSize = size * 0.38;
+  ctx.font = `700 ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
+
+  // Dark stroke outline
+  ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+  ctx.lineWidth = size * 0.025;
+  ctx.lineJoin = 'round';
+  ctx.strokeText(initials, r, r);
+
+  // White fill
+  ctx.shadowColor = 'rgba(0,0,0,0.4)';
+  ctx.shadowBlur = size * 0.05;
+  ctx.shadowOffsetY = size * 0.015;
+  ctx.fillStyle = 'white';
   ctx.fillText(initials, r, r);
 
   // Rim highlight
