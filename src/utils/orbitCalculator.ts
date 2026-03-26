@@ -264,25 +264,53 @@ function computeDrillDown(input: OrbitInput): OrbitLayout {
   const rings: OrbitRing[] = [];
   let ringNum = 1;
 
-  // Ring 1: Explicitly linked + people known through this person
+  // Ring 1: "Me" + explicitly linked + people known through this person
+  // "Me" always appears — you know them, so they know you
   const linkedIds = new Set(centerPerson.linkedPersonIds ?? []);
-  // Also include people whose knownThrough references the center person
   const knownThroughIds = people
     .filter((p) => p.knownThrough?.personId === centerPersonId && !linkedIds.has(p.id))
     .map((p) => p.id);
   for (const id of knownThroughIds) linkedIds.add(id);
 
   const linked = people.filter((p) => linkedIds.has(p.id)).sort(interactionSort);
-  if (linked.length > 0) {
-    const radius = SOLAR.BASE_RADIUS;
-    rings.push({ ring: ringNum, radius, label: 'Connected', color: '#4A90D9' });
-    linked.forEach((p, i) => {
-      const pos = positionOnRing(i, linked.length, radius);
-      nodes.push(makeNode(p, ringNum, pos, '#4A90D9'));
-      placed.add(p.id);
-    });
-    ringNum++;
-  }
+
+  // Always include "me" in ring 1
+  const meNode: OrbitNode = {
+    id: 'me',
+    label: input.myName || 'Me',
+    photoBlob: input.myPhotoBlob,
+    ring: ringNum,
+    angle: 0,
+    x: 0,
+    y: 0,
+    isFavorite: false,
+    isOnPlatform: true,
+    isReadOnly: false,
+    daysSinceContact: null,
+  };
+
+  const ring1People = [meNode];
+  const ring1Radius = SOLAR.BASE_RADIUS;
+
+  // Add linked people alongside "me"
+  linked.forEach((p) => {
+    ring1People.push(makeNode(p, ringNum, { angle: 0, x: 0, y: 0 }));
+    placed.add(p.id);
+  });
+
+  // Position everyone in ring 1 evenly
+  rings.push({ ring: ringNum, radius: ring1Radius, label: 'Connected', color: '#4A90D9' });
+  ring1People.forEach((node, i) => {
+    const pos = positionOnRing(i, ring1People.length, ring1Radius);
+    node.angle = pos.angle;
+    node.x = pos.x;
+    node.y = pos.y;
+    node.ring = ringNum;
+    if (node.id !== 'me') node.categoryColor = '#4A90D9';
+    nodes.push(node);
+  });
+  placed.add('me');
+  ringNum++;
 
   // Ring 2+: People sharing categories with center person
   for (const cat of categories) {
