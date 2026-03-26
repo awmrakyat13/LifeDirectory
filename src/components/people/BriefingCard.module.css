@@ -1,0 +1,115 @@
+.card {
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-lg);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+  padding-bottom: var(--space-md);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.headerInfo {
+  flex: 1;
+}
+
+.name {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+}
+
+.relationship {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+}
+
+@media (max-width: 500px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.item {
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-sm);
+}
+
+.itemLabel {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-tertiary);
+  margin-bottom: 2px;
+}
+
+.itemValue {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+}
+
+.warn {
+  color: var(--color-warning);
+  font-weight: 600;
+}
+
+.danger {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin-top: 2px;
+}
+
+.tag {
+  padding: 1px var(--space-sm);
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+}
+
+.sensitiveTag {
+  background: #E74C3C15;
+  color: var(--color-danger);
+}
+
+.section {
+  margin-top: var(--space-md);
+  grid-column: 1 / -1;
+}
+
+.sectionTitle {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-tertiary);
+  margin-bottom: var(--space-xs);
+}
+
+.sectionText {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  line-height: 1.5;
+}
+
+.knownThrough {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-top: var(--space-xs);
+}

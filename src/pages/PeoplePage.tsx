@@ -8,6 +8,7 @@ import { SearchBar } from '../components/ui/SearchBar';
 import { EmptyState } from '../components/ui/EmptyState';
 import { PersonCardSkeletonList } from '../components/ui/Skeleton';
 import type { Person } from '../models/types';
+import { ContactImportButton } from '../components/people/ContactImport';
 import styles from './PeoplePage.module.css';
 
 type SortKey = 'name' | 'recent' | 'added';
@@ -52,7 +53,10 @@ export function PeoplePage() {
     <div>
       <div className={styles.header}>
         <h1>People</h1>
-        <Link to="/people/new" className={styles.addBtn}>+ Add Person</Link>
+        <div style={{ display: 'flex', gap: 'var(--space-sm)', alignItems: 'center' }}>
+          <ContactImportButton />
+          <Link to="/people/new" className={styles.addBtn}>+ Add Person</Link>
+        </div>
       </div>
 
       <div className={styles.toolbar}>

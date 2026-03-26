@@ -1,0 +1,118 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1100;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 15vh;
+  animation: fadeIn 0.1s ease-out;
+}
+
+@media (max-width: 600px) {
+  .overlay {
+    padding-top: var(--space-md);
+  }
+}
+
+.panel {
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 520px;
+  max-height: 70vh;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: scaleIn 0.15s ease-out;
+  display: flex;
+  flex-direction: column;
+  margin: 0 var(--space-md);
+}
+
+.inputRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.searchIcon {
+  color: var(--color-text-tertiary);
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-lg);
+}
+
+.hint {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+  flex-shrink: 0;
+}
+
+.results {
+  overflow-y: auto;
+  max-height: 50vh;
+}
+
+.resultItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.1s;
+}
+
+.resultItem:hover,
+.resultItemActive {
+  background: var(--color-bg-secondary);
+}
+
+.resultInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.resultName {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.resultMeta {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.empty {
+  padding: var(--space-xl);
+  text-align: center;
+  color: var(--color-text-tertiary);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.97); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}

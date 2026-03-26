@@ -72,16 +72,18 @@ function Scene({ layout, hoveredNodeId, onHover, onClick }: Galaxy3DProps) {
 
       <DustField />
 
-      {/* Galactic disc plane — faint elliptical glow beneath everything */}
-      <mesh rotation={[0, 0, 0]} position={[0, 0, -2]}>
-        <planeGeometry args={[120, 120]} />
-        <meshBasicMaterial
-          color="#1a1a3e"
-          transparent
-          opacity={0.08}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-        />
+      {/* Galactic disc — layered glow planes for depth */}
+      <mesh position={[0, 0, -3]}>
+        <planeGeometry args={[150, 150]} />
+        <meshBasicMaterial color="#0d0d2b" transparent opacity={0.06} blending={THREE.AdditiveBlending} depthWrite={false} />
+      </mesh>
+      <mesh position={[0, 0, -2.5]} rotation={[0, 0, 0.3]}>
+        <planeGeometry args={[80, 80]} />
+        <meshBasicMaterial color="#1a1040" transparent opacity={0.05} blending={THREE.AdditiveBlending} depthWrite={false} />
+      </mesh>
+      <mesh position={[10, -5, -2]} rotation={[0, 0, -0.5]}>
+        <planeGeometry args={[50, 50]} />
+        <meshBasicMaterial color="#0a1a3a" transparent opacity={0.04} blending={THREE.AdditiveBlending} depthWrite={false} />
       </mesh>
 
       <fog attach="fog" args={['#060612', 60, 180]} />
