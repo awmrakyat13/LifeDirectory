@@ -145,10 +145,19 @@ function Scene({ layout, hoveredNodeId, onHover, onClick }: Galaxy3DProps) {
         maxPolarAngle={Math.PI * 0.72}
         minPolarAngle={Math.PI * 0.28}
         zoomSpeed={0.6}
-        panSpeed={0.5}
+        panSpeed={0.8}
         rotateSpeed={0.35}
         enableDamping
         dampingFactor={0.04}
+        mouseButtons={{
+          LEFT: THREE.MOUSE.PAN,
+          MIDDLE: THREE.MOUSE.DOLLY,
+          RIGHT: THREE.MOUSE.ROTATE,
+        }}
+        touches={{
+          ONE: THREE.TOUCH.PAN,
+          TWO: THREE.TOUCH.DOLLY_ROTATE,
+        }}
       />
     </>
   );
