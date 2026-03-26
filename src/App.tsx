@@ -5,6 +5,7 @@ import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { ToastProvider } from './components/ui/Toast';
 import { PersonCardSkeletonList } from './components/ui/Skeleton';
 import { AuthGuard } from './components/auth/AuthGuard';
+import { AutoLinker } from './components/auth/AutoLinker';
 import { AuthContext, useAuthProvider } from './hooks/useAuth';
 import { useTheme } from './hooks/useTheme';
 
@@ -15,7 +16,7 @@ const AddEditPersonPage = lazy(() => import('./pages/AddEditPersonPage').then((m
 const CategoriesPage = lazy(() => import('./pages/CategoriesPage').then((m) => ({ default: m.CategoriesPage })));
 const RemindersPage = lazy(() => import('./pages/RemindersPage').then((m) => ({ default: m.RemindersPage })));
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })));
-const ConnectionsPage = lazy(() => import('./pages/ConnectionsPage').then((m) => ({ default: m.ConnectionsPage })));
+
 
 function PageFallback() {
   return <PersonCardSkeletonList count={3} />;
@@ -32,7 +33,7 @@ function AppContent() {
         <Route path="/people/new" element={<Suspense fallback={<PageFallback />}><AddEditPersonPage /></Suspense>} />
         <Route path="/people/:id" element={<Suspense fallback={<PageFallback />}><PersonDetailPage /></Suspense>} />
         <Route path="/people/:id/edit" element={<Suspense fallback={<PageFallback />}><AddEditPersonPage /></Suspense>} />
-        <Route path="/connections" element={<Suspense fallback={<PageFallback />}><ConnectionsPage /></Suspense>} />
+
         <Route path="/categories" element={<Suspense fallback={<PageFallback />}><CategoriesPage /></Suspense>} />
         <Route path="/reminders" element={<Suspense fallback={<PageFallback />}><RemindersPage /></Suspense>} />
         <Route path="/settings" element={<Suspense fallback={<PageFallback />}><SettingsPage /></Suspense>} />
@@ -50,7 +51,9 @@ export function App() {
         <HashRouter>
           <ToastProvider>
             <AuthGuard>
-              <AppContent />
+              <AutoLinker>
+                <AppContent />
+              </AutoLinker>
             </AuthGuard>
           </ToastProvider>
         </HashRouter>

@@ -9,6 +9,7 @@ import {
   addPersonCategoryFs,
   deletePersonCategoriesForPerson,
 } from '../firebase/firestore';
+import { upsertMatchHint, deleteMatchHintsForPerson } from '../firebase/matchHints';
 import type { Person, PersonCategory } from '../models/types';
 
 export function useFirestorePeople(categoryId?: string) {
@@ -86,6 +87,8 @@ export function useFirestorePersonActions() {
         categoryId: catId,
       });
     }
+    // Create match hints for email/phone
+    await syncMatchHints(user.uid, id, `${data.firstName} ${data.lastName}`, data.emails, data.phones);
     return id;
   }, [user]);
 
@@ -110,6 +113,7 @@ export function useFirestorePersonActions() {
 
   const deletePerson = useCallback(async (id: string) => {
     if (!user) return;
+    await deleteMatchHintsForPerson(user.uid, id);
     await deletePersonFs(user.uid, id);
   }, [user]);
 
@@ -127,4 +131,37 @@ export function useFirestorePersonActions() {
   }, [user]);
 
   return { addPerson, updatePerson, deletePerson, toggleFavorite };
+}
+
+async function syncMatchHints(
+  ownerUid: string,
+  personId: string,
+  personName: string,
+  emails?: { label: string; value: string }[],
+  phones?: { label: string; value: string }[]
+) {
+  // Delete old hints for this person, then create fresh ones
+  await deleteMatchHintsForPerson(ownerUid, personId);
+
+  const primaryEmail = emails?.[0]?.value?.toLowerCase().trim();
+  if (primaryEmail) {
+    await upsertMatchHint({
+      id: `${ownerUid}-${personId}-email`,
+      ownerUid,
+      personId,
+      personName,
+      email: primaryEmail,
+    });
+  }
+
+  const primaryPhone = phones?.[0]?.value?.trim();
+  if (primaryPhone) {
+    await upsertMatchHint({
+      id: `${ownerUid}-${personId}-phone`,
+      ownerUid,
+      personId,
+      personName,
+      phone: primaryPhone,
+    });
+  }
 }
