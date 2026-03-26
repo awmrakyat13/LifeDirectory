@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { createAvatarTexture, createPhotoTexture } from './avatarTexture';
+import { SOLAR } from '../../constants/solarSystem';
 import type { OrbitNode as OrbitNodeType } from '../../utils/orbitCalculator';
 
 interface OrbitNode3DProps {
@@ -11,79 +12,115 @@ interface OrbitNode3DProps {
   isHovered: boolean;
   onHover: (id: string | null) => void;
   onClick: (id: string) => void;
-  scale3d: number;
 }
 
-export function OrbitNode3D({ node, isCenter, isHovered, onHover, onClick, scale3d }: OrbitNode3DProps) {
-  const meshRef = useRef<THREE.Mesh>(null);
+export function OrbitNode3D({ node, isCenter, isHovered, onHover, onClick }: OrbitNode3DProps) {
+  const groupRef = useRef<THREE.Group>(null);
   const glowRef = useRef<THREE.Mesh>(null);
+  const ringRef = useRef<THREE.Mesh>(null);
   const [texture, setTexture] = useState<THREE.CanvasTexture | null>(null);
 
   const nameParts = node.label.split(' ');
   const firstName = nameParts[0] || 'M';
   const lastName = nameParts.slice(1).join(' ') || 'e';
 
-  // Create avatar texture
   useEffect(() => {
     if (node.photoBlob) {
-      createPhotoTexture(node.photoBlob).then(setTexture);
+      createPhotoTexture(node.photoBlob, 256).then(setTexture);
     } else {
-      setTexture(createAvatarTexture(firstName, lastName));
+      setTexture(createAvatarTexture(firstName, lastName, 256));
     }
   }, [node.photoBlob, firstName, lastName]);
 
   // Depth scaling
-  const depthScale = isCenter ? 1 : Math.max(0.7, 1 - node.ring * 0.06);
-  const baseSize = isCenter ? 8 : 5;
-  const nodeSize = baseSize * depthScale * scale3d;
+  const depthScale = isCenter ? 1 : Math.max(0.75, 1 - node.ring * 0.05);
+  const baseSize = isCenter ? SOLAR.CENTER_SIZE * 0.14 : SOLAR.NODE_SIZE * 0.12;
+  const nodeSize = baseSize * depthScale;
 
-  // Gentle floating animation
+  // Glow color
+  const glowColor = useMemo(
+    () => new THREE.Color(isCenter ? '#F39C12' : node.categoryColor || '#4A90D9'),
+    [isCenter, node.categoryColor]
+  );
+
   useFrame((state) => {
-    if (meshRef.current) {
-      const t = state.clock.elapsedTime;
-      meshRef.current.position.z = Math.sin(t * 0.5 + node.angle * 3) * 1.5;
+    const t = state.clock.elapsedTime;
 
-      // Hover scale
-      const targetScale = isHovered ? 1.2 : 1;
-      meshRef.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.1);
+    if (groupRef.current) {
+      // Gentle floating
+      groupRef.current.position.z = Math.sin(t * 0.4 + node.angle * 3) * 0.8;
+      // Hover scale with smooth lerp
+      const target = isHovered && !isCenter ? 1.25 : 1;
+      const s = groupRef.current.scale.x;
+      const next = s + (target - s) * 0.1;
+      groupRef.current.scale.setScalar(next);
     }
-    if (glowRef.current && isCenter) {
-      const t = state.clock.elapsedTime;
-      const pulse = 1 + Math.sin(t * 1.5) * 0.15;
-      glowRef.current.scale.set(pulse, pulse, pulse);
+
+    // Pulsing glow
+    if (glowRef.current) {
+      const pulse = isCenter ? 1 + Math.sin(t * 1.2) * 0.2 : 1 + Math.sin(t * 0.8 + node.angle) * 0.08;
+      glowRef.current.scale.setScalar(pulse);
+      const mat = glowRef.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = isCenter ? 0.12 + Math.sin(t * 1.2) * 0.05 : (isHovered ? 0.12 : 0.06);
+    }
+
+    // Rotating category ring
+    if (ringRef.current) {
+      ringRef.current.rotation.z = t * 0.3;
     }
   });
 
-  // Glow color
-  const glowColor = isCenter ? '#F39C12' : node.categoryColor || '#4A90D9';
-
-  const spriteMap = useMemo(() => {
+  const spriteMat = useMemo(() => {
     if (!texture) return null;
     return new THREE.SpriteMaterial({
       map: texture,
       transparent: true,
       depthWrite: false,
+      sizeAttenuation: true,
     });
   }, [texture]);
 
   if (!texture) return null;
 
+  const pos: [number, number, number] = [node.x * 0.1, node.y * 0.1, 0];
+
   return (
-    <group position={[node.x * 0.1, node.y * 0.1, 0]}>
-      {/* Glow sphere behind the avatar */}
+    <group ref={groupRef} position={pos}>
+      {/* Outer glow sphere */}
       <mesh ref={glowRef}>
-        <sphereGeometry args={[nodeSize * 0.8, 16, 16]} />
-        <meshBasicMaterial color={glowColor} transparent opacity={isCenter ? 0.15 : 0.08} />
+        <sphereGeometry args={[nodeSize * 1.8, 32, 32]} />
+        <meshBasicMaterial color={glowColor} transparent opacity={0.06} side={THREE.BackSide} />
       </mesh>
 
+      {/* Category color ring (toroid) */}
+      {node.categoryColor && !isCenter && (
+        <mesh ref={ringRef} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[nodeSize * 0.65, 0.08, 8, 64]} />
+          <meshBasicMaterial color={node.categoryColor} transparent opacity={0.5} />
+        </mesh>
+      )}
+
+      {/* Center special rings */}
+      {isCenter && (
+        <>
+          <mesh rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[nodeSize * 0.8, 0.06, 8, 64]} />
+            <meshBasicMaterial color="#F39C12" transparent opacity={0.4} />
+          </mesh>
+          <mesh rotation={[Math.PI / 2.5, 0.3, 0]}>
+            <torusGeometry args={[nodeSize * 1.0, 0.04, 8, 64]} />
+            <meshBasicMaterial color="#E67E22" transparent opacity={0.2} />
+          </mesh>
+        </>
+      )}
+
       {/* Avatar sprite */}
-      {spriteMap && (
+      {spriteMat && (
         <sprite
-          ref={meshRef as unknown as React.Ref<THREE.Sprite>}
-          material={spriteMap}
+          material={spriteMat}
           scale={[nodeSize, nodeSize, 1]}
-          onPointerEnter={(e) => { e.stopPropagation(); onHover(node.id); }}
-          onPointerLeave={() => onHover(null)}
+          onPointerEnter={(e) => { e.stopPropagation(); onHover(node.id); document.body.style.cursor = 'pointer'; }}
+          onPointerLeave={() => { onHover(null); document.body.style.cursor = 'default'; }}
           onClick={(e) => { e.stopPropagation(); onClick(node.id); }}
         />
       )}
@@ -91,7 +128,7 @@ export function OrbitNode3D({ node, isCenter, isHovered, onHover, onClick, scale
       {/* Favorite badge */}
       {node.isFavorite && !isCenter && (
         <mesh position={[nodeSize * 0.35, nodeSize * 0.35, 0.5]}>
-          <sphereGeometry args={[0.6, 8, 8]} />
+          <sphereGeometry args={[0.35, 12, 12]} />
           <meshBasicMaterial color="#F39C12" />
         </mesh>
       )}
@@ -99,38 +136,39 @@ export function OrbitNode3D({ node, isCenter, isHovered, onHover, onClick, scale
       {/* Platform badge */}
       {node.isOnPlatform && !isCenter && (
         <mesh position={[-nodeSize * 0.35, nodeSize * 0.35, 0.5]}>
-          <sphereGeometry args={[0.6, 8, 8]} />
+          <sphereGeometry args={[0.35, 12, 12]} />
           <meshBasicMaterial color="#4A90D9" />
         </mesh>
       )}
 
-      {/* Add hint badge for read-only */}
+      {/* Add hint */}
       {node.isReadOnly && node.shareableInfo && !isCenter && (
         <mesh position={[nodeSize * 0.35, -nodeSize * 0.35, 0.5]}>
-          <sphereGeometry args={[0.7, 8, 8]} />
+          <sphereGeometry args={[0.4, 12, 12]} />
           <meshBasicMaterial color="#4A90D9" />
         </mesh>
       )}
 
-      {/* Name label on hover */}
+      {/* Name label */}
       {(isHovered || isCenter) && (
         <Html
           center
-          position={[0, -nodeSize * 0.7, 0]}
+          position={[0, -nodeSize * 0.65, 0]}
           style={{
             color: 'white',
             fontSize: isCenter ? '14px' : '12px',
             fontWeight: isCenter ? 600 : 500,
-            fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
             whiteSpace: 'nowrap',
-            textShadow: '0 2px 8px rgba(0,0,0,0.8)',
+            textShadow: '0 0 12px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.8)',
             pointerEvents: 'none',
             userSelect: 'none',
+            letterSpacing: '0.02em',
           }}
         >
           {node.label}
           {node.isReadOnly && node.shareableInfo && (
-            <span style={{ color: '#4A90D9', fontSize: '10px', marginLeft: 4 }}>(tap to add)</span>
+            <span style={{ color: '#5DADE2', fontSize: '10px', marginLeft: 4 }}>+ add</span>
           )}
         </Html>
       )}

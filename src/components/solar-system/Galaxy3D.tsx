@@ -1,6 +1,8 @@
-import { Suspense } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { Suspense, useRef } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Stars } from '@react-three/drei';
+import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
+import * as THREE from 'three';
 import { OrbitNode3D } from './OrbitNode3D';
 import { OrbitRing3D } from './OrbitRing3D';
 import { ConnectionLine3D } from './ConnectionLine3D';
@@ -13,6 +15,46 @@ interface Galaxy3DProps {
   onClick: (id: string) => void;
 }
 
+// Slow ambient dust particles
+function DustField() {
+  const ref = useRef<THREE.Points>(null);
+  const count = 600;
+
+  const positions = new Float32Array(count * 3);
+  const sizes = new Float32Array(count);
+  for (let i = 0; i < count; i++) {
+    positions[i * 3] = (Math.random() - 0.5) * 200;
+    positions[i * 3 + 1] = (Math.random() - 0.5) * 200;
+    positions[i * 3 + 2] = (Math.random() - 0.5) * 40;
+    sizes[i] = Math.random() * 0.3 + 0.1;
+  }
+
+  useFrame((state) => {
+    if (ref.current) {
+      ref.current.rotation.z = state.clock.elapsedTime * 0.005;
+      ref.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.01) * 0.02;
+    }
+  });
+
+  return (
+    <points ref={ref}>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
+        <bufferAttribute attach="attributes-size" args={[sizes, 1]} />
+      </bufferGeometry>
+      <pointsMaterial
+        color="#5DADE2"
+        size={0.15}
+        transparent
+        opacity={0.3}
+        sizeAttenuation
+        depthWrite={false}
+        blending={THREE.AdditiveBlending}
+      />
+    </points>
+  );
+}
+
 function Scene({ layout, hoveredNodeId, onHover, onClick }: Galaxy3DProps) {
   const nodePositions = new Map<string, { x: number; y: number }>();
   nodePositions.set(layout.center.id, { x: layout.center.x, y: layout.center.y });
@@ -22,15 +64,20 @@ function Scene({ layout, hoveredNodeId, onHover, onClick }: Galaxy3DProps) {
 
   return (
     <>
-      {/* Ambient + point light for subtle shading */}
-      <ambientLight intensity={0.3} />
-      <pointLight position={[0, 0, 30]} intensity={1} color="#F39C12" />
+      {/* Lighting */}
+      <ambientLight intensity={0.15} color="#8899bb" />
+      <pointLight position={[0, 0, 25]} intensity={2} color="#F39C12" distance={80} decay={2} />
+      <pointLight position={[30, -20, 15]} intensity={0.5} color="#5DADE2" distance={60} decay={2} />
+      <pointLight position={[-25, 15, 10]} intensity={0.3} color="#9B59B6" distance={50} decay={2} />
 
-      {/* Star field */}
-      <Stars radius={200} depth={80} count={3000} factor={4} saturation={0.2} fade speed={0.5} />
+      {/* Deep star field */}
+      <Stars radius={300} depth={100} count={5000} factor={5} saturation={0.3} fade speed={0.3} />
 
-      {/* Nebula-like fog */}
-      <fog attach="fog" args={['#0a0a1a', 80, 250]} />
+      {/* Dust particles */}
+      <DustField />
+
+      {/* Fog */}
+      <fog attach="fog" args={['#060612', 60, 200]} />
 
       {/* Orbit rings */}
       {layout.rings.map((ring) => (
@@ -62,7 +109,6 @@ function Scene({ layout, hoveredNodeId, onHover, onClick }: Galaxy3DProps) {
           isHovered={hoveredNodeId === node.id}
           onHover={onHover}
           onClick={onClick}
-          scale3d={1}
         />
       ))}
 
@@ -73,23 +119,36 @@ function Scene({ layout, hoveredNodeId, onHover, onClick }: Galaxy3DProps) {
         isHovered={hoveredNodeId === layout.center.id}
         onHover={onHover}
         onClick={onClick}
-        scale3d={1}
       />
+
+      {/* Post-processing */}
+      <EffectComposer>
+        <Bloom
+          luminanceThreshold={0.2}
+          luminanceSmoothing={0.9}
+          intensity={0.8}
+          mipmapBlur
+        />
+        <Vignette
+          offset={0.3}
+          darkness={0.7}
+        />
+      </EffectComposer>
 
       {/* Camera controls */}
       <OrbitControls
         enablePan
         enableZoom
         enableRotate
-        minDistance={15}
-        maxDistance={150}
-        maxPolarAngle={Math.PI * 0.75}
-        minPolarAngle={Math.PI * 0.25}
-        zoomSpeed={0.8}
-        panSpeed={0.8}
-        rotateSpeed={0.4}
+        minDistance={12}
+        maxDistance={120}
+        maxPolarAngle={Math.PI * 0.72}
+        minPolarAngle={Math.PI * 0.28}
+        zoomSpeed={0.6}
+        panSpeed={0.5}
+        rotateSpeed={0.35}
         enableDamping
-        dampingFactor={0.05}
+        dampingFactor={0.04}
       />
     </>
   );
@@ -98,9 +157,16 @@ function Scene({ layout, hoveredNodeId, onHover, onClick }: Galaxy3DProps) {
 export function Galaxy3D(props: Galaxy3DProps) {
   return (
     <Canvas
-      camera={{ position: [0, -25, 45], fov: 60, near: 0.1, far: 500 }}
-      style={{ background: '#0a0a1a' }}
-      gl={{ antialias: true, alpha: false }}
+      camera={{ position: [0, -20, 40], fov: 55, near: 0.1, far: 500 }}
+      style={{ background: '#060612' }}
+      dpr={[1, 2]}
+      gl={{
+        antialias: true,
+        alpha: false,
+        toneMapping: THREE.ACESFilmicToneMapping,
+        toneMappingExposure: 1.2,
+        outputColorSpace: THREE.SRGBColorSpace,
+      }}
     >
       <Suspense fallback={null}>
         <Scene {...props} />
