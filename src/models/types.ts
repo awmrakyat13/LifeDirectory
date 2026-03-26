@@ -100,4 +100,6 @@ export interface AppSettings {
   theme: 'light' | 'dark' | 'system';
   nudgeDays: number;
   defaultCategoryId?: string;
+  myName?: string;
+  myPhotoBlob?: Blob;
 }

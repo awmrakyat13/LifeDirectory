@@ -18,6 +18,9 @@ export class LifeDirectoryDB extends Dexie {
       interactions: 'id, personId, date, createdAt',
       settings: 'id',
     });
+
+    // v2: adds myName, myPhotoBlob to settings (non-indexed fields, no schema change)
+    this.version(2).stores({});
   }
 }
 

@@ -3,9 +3,12 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/database';
 import { useTheme } from '../hooks/useTheme';
 import { useInstallPrompt } from '../hooks/useInstallPrompt';
+import { useAppSettings } from '../hooks/useAppSettings';
 import { exportData, importData, previewImport, exportCategory } from '../db/backup';
+import { compressImage } from '../utils/image';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { useToast } from '../components/ui/Toast';
+import { Avatar } from '../components/ui/Avatar';
 import { useCategories } from '../hooks/useCategories';
 import styles from './SettingsPage.module.css';
 
@@ -14,6 +17,8 @@ export function SettingsPage() {
   const { canInstall, isInstalled, install } = useInstallPrompt();
   const { toast } = useToast();
   const { categories } = useCategories();
+  const { settings: appSettings, updateSettings } = useAppSettings();
+  const profileFileRef = useRef<HTMLInputElement>(null);
   const settings = useLiveQuery(() => db.settings.get('singleton'));
   const nudgeDays = settings?.nudgeDays ?? 30;
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -66,6 +71,46 @@ export function SettingsPage() {
   return (
     <div className={styles.container}>
       <h1>Settings</h1>
+
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>My Profile</h2>
+        <div className={styles.profileRow}>
+          <div className={styles.profileAvatar} onClick={() => profileFileRef.current?.click()}>
+            <Avatar
+              photoBlob={appSettings?.myPhotoBlob}
+              firstName={appSettings?.myName?.split(' ')[0] || 'M'}
+              lastName={appSettings?.myName?.split(' ')[1] || 'e'}
+              size={64}
+            />
+          </div>
+          <div className={styles.profileFields}>
+            <input
+              className={styles.profileInput}
+              value={appSettings?.myName ?? ''}
+              onChange={(e) => updateSettings({ myName: e.target.value })}
+              placeholder="Your name"
+            />
+            <input
+              ref={profileFileRef}
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  const compressed = await compressImage(file);
+                  await updateSettings({ myPhotoBlob: compressed });
+                  toast('Profile photo updated', 'success');
+                }
+                e.target.value = '';
+              }}
+            />
+            <button className={styles.dataBtn} onClick={() => profileFileRef.current?.click()}>
+              Change Photo
+            </button>
+          </div>
+        </div>
+      </section>
 
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Appearance</h2>

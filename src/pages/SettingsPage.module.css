@@ -122,3 +122,35 @@
   flex-direction: column;
   gap: var(--space-sm);
 }
+
+.profileRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+.profileAvatar {
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.profileFields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  flex: 1;
+}
+
+.profileInput {
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-input-bg);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+}
+
+.profileInput:focus {
+  border-color: var(--color-accent);
+  outline: none;
+}
