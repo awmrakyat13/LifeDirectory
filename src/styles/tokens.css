@@ -1,0 +1,56 @@
+:root {
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f5f5f7;
+  --color-bg-tertiary: #e8e8ed;
+  --color-text-primary: #1d1d1f;
+  --color-text-secondary: #6e6e73;
+  --color-text-tertiary: #aeaeb2;
+  --color-accent: #4A90D9;
+  --color-accent-hover: #357ABD;
+  --color-danger: #E74C3C;
+  --color-success: #2ECC71;
+  --color-warning: #F39C12;
+  --color-border: #d2d2d7;
+  --color-card-bg: #ffffff;
+  --color-card-shadow: rgba(0, 0, 0, 0.08);
+  --color-input-bg: #ffffff;
+  --color-sidebar-bg: #f5f5f7;
+
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.25rem;
+  --font-size-xl: 1.5rem;
+  --font-size-2xl: 2rem;
+
+  --sidebar-width: 240px;
+  --bottomnav-height: 64px;
+}
+
+[data-theme="dark"] {
+  --color-bg-primary: #1a1a2e;
+  --color-bg-secondary: #16213e;
+  --color-bg-tertiary: #0f3460;
+  --color-text-primary: #e8e8ed;
+  --color-text-secondary: #a0a0a8;
+  --color-text-tertiary: #6e6e73;
+  --color-accent: #5DADE2;
+  --color-accent-hover: #85C1E9;
+  --color-border: #2a2a4a;
+  --color-card-bg: #16213e;
+  --color-card-shadow: rgba(0, 0, 0, 0.3);
+  --color-input-bg: #1a1a2e;
+  --color-sidebar-bg: #16213e;
+}

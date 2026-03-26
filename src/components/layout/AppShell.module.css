@@ -1,0 +1,15 @@
+.shell {
+  min-height: 100dvh;
+}
+
+.content {
+  padding: var(--space-lg);
+  padding-bottom: calc(var(--bottomnav-height) + var(--space-lg));
+}
+
+@media (min-width: 769px) {
+  .content {
+    margin-left: var(--sidebar-width);
+    padding-bottom: var(--space-lg);
+  }
+}
