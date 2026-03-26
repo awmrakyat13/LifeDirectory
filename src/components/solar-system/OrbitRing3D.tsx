@@ -63,7 +63,7 @@ export function OrbitRing3D({ ring }: OrbitRing3DProps) {
   }, [radius]);
 
   return (
-    <group rotation={tilt}>
+    <group rotation={tilt} position={[0, 0, -1.5]}>
       {/* Full orbit path */}
       <mesh>
         <torusGeometry args={[radius, tubeRadius, 6, segments]} />
