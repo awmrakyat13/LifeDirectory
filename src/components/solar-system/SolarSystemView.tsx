@@ -68,8 +68,11 @@ export function SolarSystemView() {
   const [setupDismissed, setSetupDismissed] = useState(false);
   const needsSetup = !profileLoading && !profile && !setupDismissed;
 
-  // Compute layout
-  const layout: OrbitLayout = useMemo(() => {
+  // Ring focus
+  const [focusedRing, setFocusedRing] = useState<string | undefined>();
+
+  // Base layout (for ring list in selector)
+  const baseLayout: OrbitLayout = useMemo(() => {
     if (remoteCircle && currentCenterId.startsWith('autolinked-')) {
       return computeCircleOrbit(remoteCircle.label, remoteCircle.entries);
     }
@@ -82,6 +85,20 @@ export function SolarSystemView() {
       myPhotoBlob: undefined,
     });
   }, [people, categories, personCategories, currentCenterId, profile?.name, remoteCircle]);
+
+  // Apply ring focus if selected
+  const layout: OrbitLayout = useMemo(() => {
+    if (!focusedRing) return baseLayout;
+    return computeOrbitLayout({
+      people,
+      categories,
+      personCategories,
+      centerPersonId: currentCenterId,
+      myName: profile?.name,
+      myPhotoBlob: undefined,
+      focusedRingLabel: focusedRing,
+    });
+  }, [baseLayout, focusedRing, people, categories, personCategories, currentCenterId, profile?.name]);
 
   // Add from circle state
   const { addPerson } = usePersonActions();
@@ -154,22 +171,27 @@ export function SolarSystemView() {
         onReady={(ref) => { galaxyRef.current = ref; }}
       />
 
-      {/* Ring jump panel */}
-      {layout.rings.length > 0 && (
-        <div className={styles.ringPanel}>
+      {/* Ring selector bar */}
+      {baseLayout.rings.length > 0 && (
+        <div className={styles.ringBar}>
           <button
-            className={styles.ringBtn}
-            onClick={() => galaxyRef.current?.resetCamera()}
-            style={{ borderColor: '#F39C12', color: '#F39C12' }}
+            className={`${styles.ringPill} ${!focusedRing ? styles.ringPillActive : ''}`}
+            onClick={() => { setFocusedRing(undefined); galaxyRef.current?.resetCamera(); }}
           >
-            Center
+            All
           </button>
-          {layout.rings.map((ring) => (
+          {baseLayout.rings.map((ring) => (
             <button
               key={ring.ring}
-              className={styles.ringBtn}
-              onClick={() => galaxyRef.current?.jumpToRing(ring.radius)}
-              style={{ borderColor: ring.color, color: ring.color }}
+              className={`${styles.ringPill} ${focusedRing === ring.label ? styles.ringPillActive : ''}`}
+              onClick={() => {
+                setFocusedRing(focusedRing === ring.label ? undefined : ring.label);
+                galaxyRef.current?.resetCamera();
+              }}
+              style={focusedRing === ring.label
+                ? { background: ring.color, borderColor: ring.color, color: 'white' }
+                : { borderColor: ring.color, color: ring.color }
+              }
             >
               {ring.label}
             </button>

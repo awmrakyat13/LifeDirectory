@@ -46,6 +46,7 @@ export interface OrbitInput {
   centerPersonId: 'me' | string;
   myName?: string;
   myPhotoBlob?: Blob;
+  focusedRingLabel?: string;
 }
 
 function interactionSort(a: Person, b: Person): number {
@@ -411,9 +412,57 @@ export function computeCircleOrbit(
   return { center, rings, nodes, connections: [] };
 }
 
-export function computeOrbitLayout(input: OrbitInput): OrbitLayout {
-  if (input.centerPersonId === 'me') {
-    return computeMeCenter(input);
+function applyRingFocus(layout: OrbitLayout, focusLabel: string): OrbitLayout {
+  const focusedRing = layout.rings.find((r) => r.label === focusLabel);
+  if (!focusedRing) return layout;
+
+  const focusedNodes = layout.nodes.filter((n) => n.ring === focusedRing.ring);
+  const otherNodes = layout.nodes.filter((n) => n.ring !== focusedRing.ring);
+
+  // Focused ring people get spread out on Ring 1 radius
+  const r1 = SOLAR.BASE_RADIUS;
+  focusedNodes.forEach((node, i) => {
+    const pos = positionOnRing(i, focusedNodes.length, r1);
+    node.x = pos.x;
+    node.y = pos.y;
+    node.angle = pos.angle;
+    node.ring = 1;
+  });
+
+  // Everyone else gets bunched into a tight outer ring
+  const r2 = getRingRadius(2);
+  otherNodes.forEach((node, i) => {
+    const pos = positionOnRing(i, otherNodes.length, r2);
+    node.x = pos.x;
+    node.y = pos.y;
+    node.angle = pos.angle;
+    node.ring = 2;
+  });
+
+  const newRings: OrbitRing[] = [
+    { ring: 1, radius: r1, label: focusLabel, color: focusedRing.color },
+  ];
+  if (otherNodes.length > 0) {
+    newRings.push({ ring: 2, radius: r2, label: 'Others', color: '#555555' });
   }
-  return computeDrillDown(input);
+
+  return {
+    center: layout.center,
+    rings: newRings,
+    nodes: [...focusedNodes, ...otherNodes],
+    connections: layout.connections,
+  };
+}
+
+export function computeOrbitLayout(input: OrbitInput): OrbitLayout {
+  let layout: OrbitLayout;
+  if (input.centerPersonId === 'me') {
+    layout = computeMeCenter(input);
+  } else {
+    layout = computeDrillDown(input);
+  }
+  if (input.focusedRingLabel) {
+    layout = applyRingFocus(layout, input.focusedRingLabel);
+  }
+  return layout;
 }

@@ -18,43 +18,55 @@
   z-index: 10;
 }
 
-.ringPanel {
+.ringBar {
   position: absolute;
-  top: var(--space-md);
-  right: var(--space-md);
+  bottom: var(--space-md);
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 10;
   display: flex;
-  flex-direction: column;
   gap: var(--space-xs);
+  padding: var(--space-xs);
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-full);
+  max-width: calc(100% - var(--space-lg) * 2);
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
-.ringBtn {
-  padding: var(--space-xs) var(--space-sm);
-  border: 1px solid;
-  border-radius: var(--radius-sm);
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(8px);
-  font-size: 0.7rem;
+.ringBar::-webkit-scrollbar {
+  display: none;
+}
+
+.ringPill {
+  padding: var(--space-xs) var(--space-md);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.75rem;
   font-weight: 500;
   cursor: pointer;
-  text-align: left;
   white-space: nowrap;
-  transition: background 0.15s;
+  transition: all 0.15s;
+  flex-shrink: 0;
 }
 
-.ringBtn:hover {
-  background: rgba(255, 255, 255, 0.1);
+.ringPill:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
 }
 
-@media (max-width: 600px) {
-  .ringPanel {
-    top: auto;
-    bottom: calc(var(--bottomnav-height) + var(--space-md) + 60px);
-    right: var(--space-sm);
-  }
+.ringPillActive {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: white;
+}
 
-  .ringBtn {
-    font-size: 0.65rem;
-    padding: 3px var(--space-xs);
+@media (max-width: 768px) {
+  .ringBar {
+    bottom: calc(var(--bottomnav-height) + var(--space-sm));
   }
 }
