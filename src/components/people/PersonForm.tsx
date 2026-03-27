@@ -4,18 +4,13 @@ import { useCategories } from '../../hooks/useCategories';
 import { usePersonActions } from '../../hooks/usePeople';
 import { useToast } from '../ui/Toast';
 import { compressImage } from '../../utils/image';
-import type { Person, Child, Pet, ContactEntry, SocialMediaEntry, NamedDate, KnownThrough } from '../../models/types';
+import type { Person, Child, Pet, ContactEntry, SocialMediaEntry, NamedDate } from '../../models/types';
 import styles from './PersonForm.module.css';
 
-import { IdentitySection } from './sections/IdentitySection';
 import { CategoriesSection } from './sections/CategoriesSection';
 import { KeyDatesSection } from './sections/KeyDatesSection';
 import { FamilySection } from './sections/FamilySection';
-import { WorkLifeSection } from './sections/WorkLifeSection';
 import { ContactSection } from './sections/ContactSection';
-import { MemorySection } from './sections/MemorySection';
-import { LinkedPeopleSection } from './sections/LinkedPeopleSection';
-import { KnownThroughSection } from './sections/KnownThroughSection';
 
 interface PersonFormProps {
   initialData?: Person;
@@ -31,10 +26,7 @@ export function PersonForm({ initialData, initialCategoryIds }: PersonFormProps)
 
   const [firstName, setFirstName] = useState(initialData?.firstName ?? '');
   const [lastName, setLastName] = useState(initialData?.lastName ?? '');
-  const [nickname, setNickname] = useState(initialData?.nickname ?? '');
   const [photoBlob, setPhotoBlob] = useState<Blob | undefined>(initialData?.photoBlob);
-  const [relationshipLabel, setRelationshipLabel] = useState(initialData?.relationshipLabel ?? '');
-  const [howWeMet, setHowWeMet] = useState(initialData?.howWeMet ?? '');
 
   const [birthday, setBirthday] = useState(initialData?.birthday ?? '');
   const [anniversary, setAnniversary] = useState(initialData?.anniversary ?? '');
@@ -46,9 +38,6 @@ export function PersonForm({ initialData, initialCategoryIds }: PersonFormProps)
 
   const [occupation, setOccupation] = useState(initialData?.occupation ?? '');
   const [company, setCompany] = useState(initialData?.company ?? '');
-  const [interests, setInterests] = useState<string[]>(initialData?.interests ?? []);
-  const [dietaryRestrictions, setDietaryRestrictions] = useState<string[]>(initialData?.dietaryRestrictions ?? []);
-  const [languages, setLanguages] = useState<string[]>(initialData?.languages ?? []);
 
   const [phones, setPhones] = useState<ContactEntry[]>(initialData?.phones ?? []);
   const [emails, setEmails] = useState<ContactEntry[]>(initialData?.emails ?? []);
@@ -56,15 +45,12 @@ export function PersonForm({ initialData, initialCategoryIds }: PersonFormProps)
   const [address, setAddress] = useState(initialData?.address ?? '');
 
   const [lifeUpdates, setLifeUpdates] = useState(initialData?.lifeUpdates ?? '');
-  const [topicsToBringUp, setTopicsToBringUp] = useState<string[]>(initialData?.topicsToBringUp ?? []);
-  const [giftIdeas, setGiftIdeas] = useState<string[]>(initialData?.giftIdeas ?? []);
-  const [sensitiveTopics, setSensitiveTopics] = useState<string[]>(initialData?.sensitiveTopics ?? []);
   const [notes, setNotes] = useState(initialData?.notes ?? '');
 
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>(initialCategoryIds ?? []);
-  const [linkedPersonIds, setLinkedPersonIds] = useState<string[]>(initialData?.linkedPersonIds ?? []);
-  const [knownThrough, setKnownThrough] = useState<KnownThrough | undefined>(initialData?.knownThrough);
   const [isFavorite] = useState(initialData?.isFavorite ?? false);
+
+  const fileInputRef = useState<HTMLInputElement | null>(null);
 
   async function handlePhotoSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -87,34 +73,35 @@ export function PersonForm({ initialData, initialCategoryIds }: PersonFormProps)
     const personData = {
       firstName: firstName.trim(),
       lastName: lastName.trim(),
-      nickname: nickname || undefined,
       photoBlob,
-      relationshipLabel: relationshipLabel || undefined,
-      howWeMet: howWeMet || undefined,
       birthday: birthday || undefined,
       anniversary: anniversary || undefined,
       customDates: customDates.length > 0 ? customDates : undefined,
       spousePartner: spousePartner || undefined,
       children: children.length > 0 ? children : undefined,
       pets: pets.length > 0 ? pets : undefined,
-      linkedPersonIds: linkedPersonIds.length > 0 ? linkedPersonIds : undefined,
-      knownThrough,
       occupation: occupation || undefined,
       company: company || undefined,
-      interests: interests.length > 0 ? interests : undefined,
-      dietaryRestrictions: dietaryRestrictions.length > 0 ? dietaryRestrictions : undefined,
-      languages: languages.length > 0 ? languages : undefined,
       phones: phones.length > 0 ? phones : undefined,
       emails: emails.length > 0 ? emails : undefined,
       socialMedia: socialMedia.length > 0 ? socialMedia : undefined,
       address: address || undefined,
       lastInteractionDate: initialData?.lastInteractionDate,
       lifeUpdates: lifeUpdates || undefined,
-      topicsToBringUp: topicsToBringUp.length > 0 ? topicsToBringUp : undefined,
-      giftIdeas: giftIdeas.length > 0 ? giftIdeas : undefined,
-      sensitiveTopics: sensitiveTopics.length > 0 ? sensitiveTopics : undefined,
       notes: notes || undefined,
       isFavorite,
+      // Preserve fields not shown in form
+      nickname: initialData?.nickname,
+      relationshipLabel: initialData?.relationshipLabel,
+      howWeMet: initialData?.howWeMet,
+      linkedPersonIds: initialData?.linkedPersonIds,
+      knownThrough: initialData?.knownThrough,
+      interests: initialData?.interests,
+      dietaryRestrictions: initialData?.dietaryRestrictions,
+      languages: initialData?.languages,
+      topicsToBringUp: initialData?.topicsToBringUp,
+      giftIdeas: initialData?.giftIdeas,
+      sensitiveTopics: initialData?.sensitiveTopics,
     };
 
     if (isEditing) {
@@ -128,27 +115,54 @@ export function PersonForm({ initialData, initialCategoryIds }: PersonFormProps)
     }
   }
 
+  const photoUrl = photoBlob ? URL.createObjectURL(photoBlob) : null;
+
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
       <div className={styles.header}>
         <h1>{isEditing ? 'Edit Person' : 'Add Person'}</h1>
       </div>
 
-      <IdentitySection
-        firstName={firstName}
-        setFirstName={setFirstName}
-        lastName={lastName}
-        setLastName={setLastName}
-        nickname={nickname}
-        setNickname={setNickname}
-        relationshipLabel={relationshipLabel}
-        setRelationshipLabel={setRelationshipLabel}
-        howWeMet={howWeMet}
-        setHowWeMet={setHowWeMet}
-        photoBlob={photoBlob}
-        setPhotoBlob={setPhotoBlob}
-        onPhotoSelect={handlePhotoSelect}
-      />
+      {/* Identity — simplified */}
+      <div className={styles.section}>
+        <h2 className={styles.sectionTitle}>Identity</h2>
+        <div className={styles.fieldGroup}>
+          <div className={styles.photoSection}>
+            {photoUrl ? (
+              <img className={styles.photoPreview} src={photoUrl} alt="Photo" onClick={() => (fileInputRef[0] as HTMLInputElement | null)?.click()} />
+            ) : (
+              <div className={styles.photoPlaceholder} onClick={() => (fileInputRef[0] as HTMLInputElement | null)?.click()}>+</div>
+            )}
+            <input
+              ref={(el) => { fileInputRef[1](el); }}
+              type="file"
+              accept="image/*"
+              onChange={handlePhotoSelect}
+              style={{ display: 'none' }}
+            />
+            <div className={styles.photoBtns}>
+              <button type="button" className={styles.photoBtn} onClick={() => (fileInputRef[0] as HTMLInputElement | null)?.click()}>
+                Choose Photo
+              </button>
+              {photoBlob && (
+                <button type="button" className={styles.photoBtn} onClick={() => setPhotoBlob(undefined)}>
+                  Remove
+                </button>
+              )}
+            </div>
+          </div>
+          <div className={styles.row}>
+            <div className={styles.field}>
+              <label className={styles.label}>First Name *</label>
+              <input className={styles.input} value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
+            </div>
+            <div className={styles.field}>
+              <label className={styles.label}>Last Name *</label>
+              <input className={styles.input} value={lastName} onChange={(e) => setLastName(e.target.value)} required />
+            </div>
+          </div>
+        </div>
+      </div>
 
       <CategoriesSection
         categories={categories}
@@ -174,18 +188,22 @@ export function PersonForm({ initialData, initialCategoryIds }: PersonFormProps)
         setPets={setPets}
       />
 
-      <WorkLifeSection
-        occupation={occupation}
-        setOccupation={setOccupation}
-        company={company}
-        setCompany={setCompany}
-        interests={interests}
-        setInterests={setInterests}
-        dietaryRestrictions={dietaryRestrictions}
-        setDietaryRestrictions={setDietaryRestrictions}
-        languages={languages}
-        setLanguages={setLanguages}
-      />
+      {/* Work & Life — simplified */}
+      <div className={styles.section}>
+        <h2 className={styles.sectionTitle}>Work & Life</h2>
+        <div className={styles.fieldGroup}>
+          <div className={styles.row}>
+            <div className={styles.field}>
+              <label className={styles.label}>Occupation</label>
+              <input className={styles.input} value={occupation} onChange={(e) => setOccupation(e.target.value)} />
+            </div>
+            <div className={styles.field}>
+              <label className={styles.label}>Company</label>
+              <input className={styles.input} value={company} onChange={(e) => setCompany(e.target.value)} />
+            </div>
+          </div>
+        </div>
+      </div>
 
       <ContactSection
         phones={phones}
@@ -198,30 +216,20 @@ export function PersonForm({ initialData, initialCategoryIds }: PersonFormProps)
         setAddress={setAddress}
       />
 
-      <KnownThroughSection
-        knownThrough={knownThrough}
-        setKnownThrough={setKnownThrough}
-        currentPersonId={initialData?.id}
-      />
-
-      <LinkedPeopleSection
-        linkedPersonIds={linkedPersonIds}
-        setLinkedPersonIds={setLinkedPersonIds}
-        currentPersonId={initialData?.id}
-      />
-
-      <MemorySection
-        lifeUpdates={lifeUpdates}
-        setLifeUpdates={setLifeUpdates}
-        topicsToBringUp={topicsToBringUp}
-        setTopicsToBringUp={setTopicsToBringUp}
-        giftIdeas={giftIdeas}
-        setGiftIdeas={setGiftIdeas}
-        sensitiveTopics={sensitiveTopics}
-        setSensitiveTopics={setSensitiveTopics}
-        notes={notes}
-        setNotes={setNotes}
-      />
+      {/* Conversation Memory — simplified */}
+      <div className={styles.section}>
+        <h2 className={styles.sectionTitle}>Conversation Memory</h2>
+        <div className={styles.fieldGroup}>
+          <div className={styles.field}>
+            <label className={styles.label}>Life Updates</label>
+            <textarea className={styles.textarea} value={lifeUpdates} onChange={(e) => setLifeUpdates(e.target.value)} placeholder="Recent life events, changes, news..." />
+          </div>
+          <div className={styles.field}>
+            <label className={styles.label}>General Notes</label>
+            <textarea className={styles.textarea} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Anything else worth remembering..." />
+          </div>
+        </div>
+      </div>
 
       <div className={styles.actions}>
         <button type="button" className={styles.cancelBtn} onClick={() => navigate(-1)}>
