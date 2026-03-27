@@ -4,13 +4,12 @@ import { useCategories } from '../../hooks/useCategories';
 import { usePersonActions } from '../../hooks/usePeople';
 import { useToast } from '../ui/Toast';
 import { compressImage } from '../../utils/image';
-import type { Person, Child, Pet, ContactEntry, SocialMediaEntry, NamedDate } from '../../models/types';
+import type { Person, Child, Pet, NamedDate } from '../../models/types';
 import styles from './PersonForm.module.css';
 
 import { CategoriesSection } from './sections/CategoriesSection';
 import { KeyDatesSection } from './sections/KeyDatesSection';
 import { FamilySection } from './sections/FamilySection';
-import { ContactSection } from './sections/ContactSection';
 
 interface PersonFormProps {
   initialData?: Person;
@@ -38,11 +37,6 @@ export function PersonForm({ initialData, initialCategoryIds }: PersonFormProps)
 
   const [occupation, setOccupation] = useState(initialData?.occupation ?? '');
   const [company, setCompany] = useState(initialData?.company ?? '');
-
-  const [phones, setPhones] = useState<ContactEntry[]>(initialData?.phones ?? []);
-  const [emails, setEmails] = useState<ContactEntry[]>(initialData?.emails ?? []);
-  const [socialMedia, setSocialMedia] = useState<SocialMediaEntry[]>(initialData?.socialMedia ?? []);
-  const [address, setAddress] = useState(initialData?.address ?? '');
 
   const [lifeUpdates, setLifeUpdates] = useState(initialData?.lifeUpdates ?? '');
   const [notes, setNotes] = useState(initialData?.notes ?? '');
@@ -82,10 +76,10 @@ export function PersonForm({ initialData, initialCategoryIds }: PersonFormProps)
       pets: pets.length > 0 ? pets : undefined,
       occupation: occupation || undefined,
       company: company || undefined,
-      phones: phones.length > 0 ? phones : undefined,
-      emails: emails.length > 0 ? emails : undefined,
-      socialMedia: socialMedia.length > 0 ? socialMedia : undefined,
-      address: address || undefined,
+      phones: initialData?.phones,
+      emails: initialData?.emails,
+      socialMedia: initialData?.socialMedia,
+      address: initialData?.address,
       lastInteractionDate: initialData?.lastInteractionDate,
       lifeUpdates: lifeUpdates || undefined,
       notes: notes || undefined,
@@ -205,18 +199,7 @@ export function PersonForm({ initialData, initialCategoryIds }: PersonFormProps)
         </div>
       </div>
 
-      <ContactSection
-        phones={phones}
-        setPhones={setPhones}
-        emails={emails}
-        setEmails={setEmails}
-        socialMedia={socialMedia}
-        setSocialMedia={setSocialMedia}
-        address={address}
-        setAddress={setAddress}
-      />
-
-      {/* Conversation Memory — simplified */}
+      {/* Conversation Memory */}
       <div className={styles.section}>
         <h2 className={styles.sectionTitle}>Conversation Memory</h2>
         <div className={styles.fieldGroup}>
